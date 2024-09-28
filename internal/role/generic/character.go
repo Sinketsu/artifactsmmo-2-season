@@ -91,6 +91,10 @@ func (c *Character) Gather() (api.SkillDataSchemaDetails, error) {
 }
 
 func (c *Character) Move(x, y int) error {
+	if c.data.X == x && c.data.Y == y {
+		return nil
+	}
+
 	res, err := c.cli.ActionMoveMyNameActionMovePost(context.Background(), &api.DestinationSchema{X: x, Y: y}, api.ActionMoveMyNameActionMovePostParams{Name: c.name})
 	if err != nil {
 		return err
@@ -133,5 +137,34 @@ func (c *Character) GetGEItem(code string) (api.GEItemSchema, error) {
 		return v.Data, nil
 	default:
 		return api.GEItemSchema{}, fmt.Errorf("unknown answer type: %v", v)
+	}
+}
+
+func (c *Character) InventoryItemCount() int {
+	count := 0
+	for _, item := range c.data.Inventory {
+		count += item.Quantity
+	}
+
+	return count
+}
+
+func (c *Character) Fight() (api.CharacterFightDataSchemaFight, error) {
+	res, err := c.cli.ActionFightMyNameActionFightPost(context.Background(), api.ActionFightMyNameActionFightPostParams{Name: c.name})
+	if err != nil {
+		return api.CharacterFightDataSchemaFight{}, err
+	}
+
+	switch v := res.(type) {
+	case *api.CharacterFightResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		if v.Data.Fight.Result == api.CharacterFightDataSchemaFightResultLose {
+			return api.CharacterFightDataSchemaFight{}, fmt.Errorf("loose battle")
+		}
+
+		return v.Data.Fight, c.updateData(unsafe.Pointer(&v.Data.Character))
+	default:
+		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("unknown answer type: %v", v)
 	}
 }

@@ -40,12 +40,7 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	inInventory := 0
-	for _, item := range c.Data().Inventory {
-		inInventory += item.Quantity
-	}
-
-	if inInventory == c.Data().InventoryMaxItems {
+	if c.InventoryItemCount() == c.Data().InventoryMaxItems {
 		err := c.Move(5, 1) // Grand Exchange
 		if err != nil {
 			return fmt.Errorf("move: %w", err)
@@ -72,16 +67,14 @@ func (c *Character) do() error {
 			return fmt.Errorf("sell: %w", err)
 		}
 
-		fmt.Println("sold", q, "copper_ore.", "Earned", gold, "gold")
+		fmt.Println("sold", q, "copper_ore", "Earned", gold, "gold")
 
 		return nil
 	}
 
-	if c.Data().X != 2 || c.Data().Y != 0 {
-		err := c.Move(2, 0) // copper_ore
-		if err != nil {
-			return fmt.Errorf("move: %w", err)
-		}
+	err := c.Move(2, 0) // copper_ore
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
 	}
 
 	drop, err := c.Gather()
