@@ -40,10 +40,15 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	if len(c.Data().Inventory) == c.Data().InventoryMaxItems {
+	inInventory := 0
+	for _, item := range c.Data().Inventory {
+		inInventory += item.Quantity
+	}
+
+	if inInventory == c.Data().InventoryMaxItems {
 		err := c.Move(5, 1) // Grand Exchange
 		if err != nil {
-			return err
+			return fmt.Errorf("move: %w", err)
 		}
 
 		q := 0
@@ -58,22 +63,25 @@ func (c *Character) do() error {
 
 		geItem, err := c.GetGEItem("copper_ore")
 		if err != nil {
-			return err
+			return fmt.Errorf("get ge item: %w", err)
 		}
 
-		gold, err := c.Sell("copper_ore", int(math.Min(float64(q), float64(geItem.MaxQuantity))), geItem.SellPrice.Value)
+		q = int(math.Min(float64(q), float64(geItem.MaxQuantity)))
+		gold, err := c.Sell("copper_ore", q, geItem.SellPrice.Value)
 		if err != nil {
-			return err
+			return fmt.Errorf("sell: %w", err)
 		}
 
 		fmt.Println("sold", q, "copper_ore.", "Earned", gold, "gold")
 
-		err = c.Move(2, 1) // copper_ore
-		if err != nil {
-			return err
-		}
-
 		return nil
+	}
+
+	if c.Data().X != 2 || c.Data().Y != 0 {
+		err := c.Move(2, 0) // copper_ore
+		if err != nil {
+			return fmt.Errorf("move: %w", err)
+		}
 	}
 
 	drop, err := c.Gather()
