@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Sinketsu/artifactsmmo/internal/role/crafter"
 	"github.com/Sinketsu/artifactsmmo/internal/role/fighter"
 	"github.com/Sinketsu/artifactsmmo/internal/role/gatherer"
 	"github.com/Sinketsu/artifactsmmo/internal/role/generic"
@@ -34,10 +35,19 @@ func main() {
 		panic(err)
 	}
 
+	enkidu, err := crafter.NewCharacter(generic.Params{
+		CharacterName: "Enkidu",
+		ServerParams:  serverParams,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	ctx, stopNotify := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	go ishtar.Live(ctx)
 	go ereshkigal.Live(ctx)
+	go enkidu.Live(ctx)
 
 	<-ctx.Done()
 	fmt.Println("got stop signal...")

@@ -149,6 +149,16 @@ func (c *Character) InventoryItemCount() int {
 	return count
 }
 
+func (c *Character) InventoryContains(code string, quantity int) bool {
+	for _, item := range c.data.Inventory {
+		if item.Code == code && item.Quantity >= quantity {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *Character) Fight() (api.CharacterFightDataSchemaFight, error) {
 	res, err := c.cli.ActionFightMyNameActionFightPost(context.Background(), api.ActionFightMyNameActionFightPostParams{Name: c.name})
 	if err != nil {
@@ -166,5 +176,21 @@ func (c *Character) Fight() (api.CharacterFightDataSchemaFight, error) {
 		return v.Data.Fight, c.updateData(unsafe.Pointer(&v.Data.Character))
 	default:
 		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("unknown answer type: %v", v)
+	}
+}
+
+func (c *Character) Craft(code string, quantity int) (api.SkillDataSchemaDetails, error) {
+	res, err := c.cli.ActionCraftingMyNameActionCraftingPost(context.Background(), &api.CraftingSchema{Code: code, Quantity: api.NewOptInt(quantity)}, api.ActionCraftingMyNameActionCraftingPostParams{Name: c.name})
+	if err != nil {
+		return api.SkillDataSchemaDetails{}, err
+	}
+
+	switch v := res.(type) {
+	case *api.SkillResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return v.Data.Details, c.updateData(unsafe.Pointer(&v.Data.Character))
+	default:
+		return api.SkillDataSchemaDetails{}, fmt.Errorf("unknown answer type: %v", v)
 	}
 }
