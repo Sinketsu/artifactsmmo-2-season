@@ -3,7 +3,6 @@ package gatherer
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/Sinketsu/artifactsmmo/internal/role/generic"
@@ -32,7 +31,7 @@ func (c *Character) Live(ctx context.Context) {
 		default:
 			err := c.do()
 			if err != nil {
-				fmt.Println(err)
+				c.Log(err)
 				time.Sleep(1 * time.Second)
 			}
 		}
@@ -40,52 +39,26 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	if c.InventoryItemCount() == c.Data().InventoryMaxItems {
-		err := c.Move(5, 1) // Grand Exchange
-		if err != nil {
-			return fmt.Errorf("move: %w", err)
-		}
+	if c.Data().FishingLevel < 10 {
+		return c.MacroGather("gudgeon", "gudgeon")
+	}
+	if c.Data().WoodcuttingLevel < 10 {
+		return c.MacroGather("ash_tree", "gudgeon", "ash_wood")
+	}
 
-		q := 0
-		for _, slot := range c.Data().Inventory {
-			if slot.Code == "gudgeon" {
-				q = slot.Quantity
+	if c.InInventory("copper_ore") > 24 {
+		if q, _ := c.InBank("copper_ore"); q == 0 {
+			if err := c.Move(4, 1); err != nil {
+				return fmt.Errorf("move: %w", err)
 			}
-		}
-		if q == 0 {
-			return fmt.Errorf("unexpected")
-		}
 
-		geItem, err := c.GetGEItem("gudgeon")
-		if err != nil {
-			return fmt.Errorf("get ge item: %w", err)
+			if err := c.Deposit("copper_ore", 24); err != nil {
+				return fmt.Errorf("deposit: %w", err)
+			}
+
+			return nil
 		}
-
-		q = int(math.Min(float64(q), float64(geItem.MaxQuantity)))
-		gold, err := c.Sell("gudgeon", q, geItem.SellPrice.Value)
-		if err != nil {
-			return fmt.Errorf("sell: %w", err)
-		}
-
-		fmt.Println("sold", q, "gudgeon", "Earned", gold, "gold")
-
-		return nil
 	}
 
-	err := c.Move(4, 2) // fishing
-	if err != nil {
-		return fmt.Errorf("move: %w", err)
-	}
-
-	drop, err := c.Gather()
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("got", drop.Xp, "XP")
-	for _, item := range drop.Items {
-		fmt.Println("got", item.Quantity, item.Code)
-	}
-
-	return nil
+	return c.MacroGather("copper_rocks")
 }

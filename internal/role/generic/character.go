@@ -21,8 +21,10 @@ type Params struct {
 }
 
 type Character struct {
-	name string
-	data api.CharacterSchema
+	name       string
+	data       api.CharacterSchema
+	gatherData GaterData
+	fightData  FightData
 
 	cli *api.Client
 }
@@ -62,6 +64,11 @@ func (c *Character) initData() error {
 	default:
 		return fmt.Errorf("unknown answer type: %v", v)
 	}
+}
+
+func (c *Character) Log(msg ...any) {
+	fmt.Print(c.name + ": ")
+	fmt.Println(msg...)
 }
 
 func (c *Character) updateData(p unsafe.Pointer) error {
@@ -149,14 +156,27 @@ func (c *Character) InventoryItemCount() int {
 	return count
 }
 
-func (c *Character) InventoryContains(code string, quantity int) bool {
+func (c *Character) InInventory(code string) int {
 	for _, item := range c.data.Inventory {
-		if item.Code == code && item.Quantity >= quantity {
-			return true
+		if item.Code == code {
+			return item.Quantity
 		}
 	}
 
-	return false
+	return 0
+}
+
+func (c *Character) InBank(code string) (int, error) {
+	res, err := c.cli.GetBankItemsMyBankItemsGet(context.Background(), api.GetBankItemsMyBankItemsGetParams{ItemCode: api.NewOptString(code)})
+	if err != nil {
+		return 0, err
+	}
+
+	if len(res.Data) == 0 {
+		return 0, nil
+	}
+
+	return res.Data[0].Quantity, nil
 }
 
 func (c *Character) Fight() (api.CharacterFightDataSchemaFight, error) {
@@ -193,4 +213,45 @@ func (c *Character) Craft(code string, quantity int) (api.SkillDataSchemaDetails
 	default:
 		return api.SkillDataSchemaDetails{}, fmt.Errorf("unknown answer type: %v", v)
 	}
+}
+
+func (c *Character) Withdraw(code string, quantity int) error {
+	res, err := c.cli.ActionWithdrawBankMyNameActionBankWithdrawPost(context.Background(), &api.SimpleItemSchema{Code: code, Quantity: quantity}, api.ActionWithdrawBankMyNameActionBankWithdrawPostParams{Name: c.name})
+	if err != nil {
+		return err
+	}
+
+	switch v := res.(type) {
+	case *api.BankItemTransactionResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return c.updateData(unsafe.Pointer(&v.Data.Character))
+	default:
+		return fmt.Errorf("unknown answer type: %v", v)
+	}
+}
+
+func (c *Character) Deposit(code string, quantity int) error {
+	res, err := c.cli.ActionDepositBankMyNameActionBankDepositPost(context.Background(), &api.SimpleItemSchema{Code: code, Quantity: quantity}, api.ActionDepositBankMyNameActionBankDepositPostParams{Name: c.name})
+	if err != nil {
+		return err
+	}
+
+	switch v := res.(type) {
+	case *api.BankItemTransactionResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return c.updateData(unsafe.Pointer(&v.Data.Character))
+	default:
+		return fmt.Errorf("unknown answer type: %v", v)
+	}
+}
+
+func (c *Character) FindOnMap(code string) ([]api.MapSchema, error) {
+	res, err := c.cli.GetAllMapsMapsGet(context.Background(), api.GetAllMapsMapsGetParams{ContentCode: api.NewOptString(code)})
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Data, nil
 }
