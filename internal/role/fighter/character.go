@@ -125,7 +125,7 @@ func (c *Character) do() error {
 		return nil
 	}
 
-	err := c.Move(0, 1) // chicken
+	err := c.Move(3, -2) // green slime
 	if err != nil {
 		return fmt.Errorf("move: %w", err)
 	}

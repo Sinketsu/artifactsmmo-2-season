@@ -48,7 +48,7 @@ func (c *Character) do() error {
 
 		q := 0
 		for _, slot := range c.Data().Inventory {
-			if slot.Code == "copper_ore" {
+			if slot.Code == "gudgeon" {
 				q = slot.Quantity
 			}
 		}
@@ -56,23 +56,23 @@ func (c *Character) do() error {
 			return fmt.Errorf("unexpected")
 		}
 
-		geItem, err := c.GetGEItem("copper_ore")
+		geItem, err := c.GetGEItem("gudgeon")
 		if err != nil {
 			return fmt.Errorf("get ge item: %w", err)
 		}
 
 		q = int(math.Min(float64(q), float64(geItem.MaxQuantity)))
-		gold, err := c.Sell("copper_ore", q, geItem.SellPrice.Value)
+		gold, err := c.Sell("gudgeon", q, geItem.SellPrice.Value)
 		if err != nil {
 			return fmt.Errorf("sell: %w", err)
 		}
 
-		fmt.Println("sold", q, "copper_ore", "Earned", gold, "gold")
+		fmt.Println("sold", q, "gudgeon", "Earned", gold, "gold")
 
 		return nil
 	}
 
-	err := c.Move(2, 0) // copper_ore
+	err := c.Move(4, 2) // fishing
 	if err != nil {
 		return fmt.Errorf("move: %w", err)
 	}
