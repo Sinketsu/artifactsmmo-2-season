@@ -39,7 +39,7 @@ func (s *SimpleGatherStrategy) Do(c *Character) error {
 	}
 
 	if c.InventoryItemCount() == c.Data().InventoryMaxItems {
-		c.Log("inventory is full - going to craft,  bank, GE...")
+		c.Log("inventory is full - going to craft, bank, GE...")
 
 		if s.craft != "" {
 			q, err := c.MacroCheckCraftResources(s.craft)

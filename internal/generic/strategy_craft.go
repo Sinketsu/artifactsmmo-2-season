@@ -68,13 +68,13 @@ func (s *SimpleCraftStrategy) Do(c *Character) error {
 			}
 		}
 
-		if len(s.recycle) > 0 {
-			if err := c.MacroRecycleAll(s.recycle...); err != nil {
-				return fmt.Errorf("recycle: %w", err)
-			}
-		}
-
 		return nil
+	}
+
+	if len(s.recycle) > 0 {
+		if err := c.MacroRecycleAll(s.recycle...); err != nil {
+			return fmt.Errorf("recycle: %w", err)
+		}
 	}
 
 	item, err := c.GetItem(s.craft)

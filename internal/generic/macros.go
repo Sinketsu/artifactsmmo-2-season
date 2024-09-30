@@ -205,7 +205,7 @@ func (c *Character) MacroRecycleAll(codes ...string) error {
 			return fmt.Errorf("find on map: %w", err)
 		}
 
-		if err := c.Move(tiles[0].X, tiles[1].Y); err != nil {
+		if err := c.Move(tiles[0].X, tiles[0].Y); err != nil {
 			return fmt.Errorf("move: %w", err)
 		}
 

@@ -38,5 +38,9 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	return generic.NewSimpleGatherStrategy().Gather("iron_rocks").Craft("iron").Bank("iron", "ruby", "sapphire", "copper_ore").Do(&c.Character)
+	return generic.NewSimpleGatherStrategy().
+		Gather("copper_rocks").
+		Craft("copper").
+		Bank("coper", "iron", "iron_ore", "ruby", "sapphire", "topaz", "emerald").
+		Do(&c.Character)
 }
