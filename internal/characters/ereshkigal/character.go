@@ -38,5 +38,8 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	return generic.NewSimpleFightStrategy().Fight("green_slime").Bank("green_slimeball", "feather").Do(&c.Character)
+	return generic.NewSimpleFightStrategy().
+		Fight("yellow_slime").
+		Bank("yellow_slimeball", "green_slimeball", "feather").
+		Do(&c.Character)
 }

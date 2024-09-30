@@ -27,6 +27,14 @@ func main() {
 		panic(err)
 	}
 
+	Cetcalcoatl, err := ishtar.NewCharacter(generic.Params{
+		CharacterName: "Cetcalcoatl",
+		ServerParams:  serverParams,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	Ereshkigal, err := ereshkigal.NewCharacter(generic.Params{
 		CharacterName: "Ereshkigal",
 		ServerParams:  serverParams,
@@ -48,6 +56,7 @@ func main() {
 	go Ishtar.Live(ctx)
 	go Ereshkigal.Live(ctx)
 	go Enkidu.Live(ctx)
+	go Cetcalcoatl.Live(ctx)
 
 	<-ctx.Done()
 	fmt.Println("got stop signal...")

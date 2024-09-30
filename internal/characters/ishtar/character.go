@@ -41,6 +41,6 @@ func (c *Character) do() error {
 	return generic.NewSimpleGatherStrategy().
 		Gather("copper_rocks").
 		Craft("copper").
-		Bank("coper", "iron", "iron_ore", "ruby", "sapphire", "topaz", "emerald").
+		Bank("copper", "iron", "iron_ore", "ruby", "sapphire", "topaz", "emerald").
 		Do(&c.Character)
 }

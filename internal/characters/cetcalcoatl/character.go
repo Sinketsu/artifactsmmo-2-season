@@ -1,4 +1,4 @@
-package enkidu
+package cetcalcoatl
 
 import (
 	"context"
@@ -38,28 +38,9 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	if c.Data().WeaponcraftingLevel < 10 {
-		return generic.NewSimpleCraftStrategy().
-			Craft("copper_dagger").
-			Recycle("copper_dagger").
-			Do(&c.Character)
-	}
-
-	if c.Data().JewelrycraftingLevel < 10 {
-		return generic.NewSimpleCraftStrategy().
-			Craft("copper_ring").
-			Recycle("copper_ring").
-			Do(&c.Character)
-	}
-
-	if c.Data().GearcraftingLevel < 10 {
-		return generic.NewSimpleCraftStrategy().
-			Craft("copper_helmet").
-			Recycle("copper_helmet").
-			Do(&c.Character)
-	}
-
-	time.Sleep(1 * time.Second)
-	c.Log("idle...")
-	return nil
+	return generic.NewSimpleGatherStrategy().
+		Gather("copper_rocks").
+		Craft("copper").
+		Bank("copper", "ruby", "sapphire", "topaz", "emerald").
+		Do(&c.Character)
 }
