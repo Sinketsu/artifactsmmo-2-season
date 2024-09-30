@@ -1,10 +1,10 @@
-package fighter
+package ereshkigal
 
 import (
 	"context"
 	"time"
 
-	"github.com/Sinketsu/artifactsmmo/internal/role/generic"
+	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
 type Character struct {
@@ -38,5 +38,5 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	return c.MacroFight("green_slime", "raw_chicken", "egg", "green_slimeball")
+	return generic.NewSimpleFightStrategy().Fight("green_slime").Bank("green_slimeball", "feather").Do(&c.Character)
 }

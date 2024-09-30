@@ -25,6 +25,7 @@ type Character struct {
 	data       api.CharacterSchema
 	gatherData GaterData
 	fightData  FightData
+	craftData  CraftData
 
 	cli *api.Client
 }
@@ -147,6 +148,20 @@ func (c *Character) GetGEItem(code string) (api.GEItemSchema, error) {
 	}
 }
 
+func (c *Character) GetItem(code string) (api.SingleItemSchemaItem, error) {
+	res, err := c.cli.GetItemItemsCodeGet(context.Background(), api.GetItemItemsCodeGetParams{Code: code})
+	if err != nil {
+		return api.SingleItemSchemaItem{}, err
+	}
+
+	switch v := res.(type) {
+	case *api.ItemResponseSchema:
+		return v.Data.Item, nil
+	default:
+		return api.SingleItemSchemaItem{}, fmt.Errorf("unknown answer type: %v", v)
+	}
+}
+
 func (c *Character) InventoryItemCount() int {
 	count := 0
 	for _, item := range c.data.Inventory {
@@ -254,4 +269,20 @@ func (c *Character) FindOnMap(code string) ([]api.MapSchema, error) {
 	}
 
 	return res.Data, nil
+}
+
+func (c *Character) Recycle(code string, quantity int) (api.RecyclingDataSchemaDetails, error) {
+	res, err := c.cli.ActionRecyclingMyNameActionRecyclingPost(context.Background(), &api.RecyclingSchema{Code: code, Quantity: api.NewOptInt(quantity)}, api.ActionRecyclingMyNameActionRecyclingPostParams{Name: c.name})
+	if err != nil {
+		return api.RecyclingDataSchemaDetails{}, err
+	}
+
+	switch v := res.(type) {
+	case *api.RecyclingResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return v.Data.Details, c.updateData(unsafe.Pointer(&v.Data.Character))
+	default:
+		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("unknown answer type: %v", v)
+	}
 }

@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/Sinketsu/artifactsmmo/internal/role/crafter"
-	"github.com/Sinketsu/artifactsmmo/internal/role/fighter"
-	"github.com/Sinketsu/artifactsmmo/internal/role/gatherer"
-	"github.com/Sinketsu/artifactsmmo/internal/role/generic"
+	"github.com/Sinketsu/artifactsmmo/internal/characters/enkidu"
+	"github.com/Sinketsu/artifactsmmo/internal/characters/ereshkigal"
+	"github.com/Sinketsu/artifactsmmo/internal/characters/ishtar"
+	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 		ServerToken: os.Getenv("SERVER_TOKEN"),
 	}
 
-	ishtar, err := gatherer.NewCharacter(generic.Params{
+	Ishtar, err := ishtar.NewCharacter(generic.Params{
 		CharacterName: "Ishtar",
 		ServerParams:  serverParams,
 	})
@@ -27,7 +27,7 @@ func main() {
 		panic(err)
 	}
 
-	ereshkigal, err := fighter.NewCharacter(generic.Params{
+	Ereshkigal, err := ereshkigal.NewCharacter(generic.Params{
 		CharacterName: "Ereshkigal",
 		ServerParams:  serverParams,
 	})
@@ -35,7 +35,7 @@ func main() {
 		panic(err)
 	}
 
-	enkidu, err := crafter.NewCharacter(generic.Params{
+	Enkidu, err := enkidu.NewCharacter(generic.Params{
 		CharacterName: "Enkidu",
 		ServerParams:  serverParams,
 	})
@@ -45,9 +45,9 @@ func main() {
 
 	ctx, stopNotify := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	go ishtar.Live(ctx)
-	go ereshkigal.Live(ctx)
-	go enkidu.Live(ctx)
+	go Ishtar.Live(ctx)
+	go Ereshkigal.Live(ctx)
+	go Enkidu.Live(ctx)
 
 	<-ctx.Done()
 	fmt.Println("got stop signal...")

@@ -11,3 +11,9 @@ type FightData struct {
 	X       int
 	Y       int
 }
+
+type CraftData struct {
+	Code string
+	X    int
+	Y    int
+}
