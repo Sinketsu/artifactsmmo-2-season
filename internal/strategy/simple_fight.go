@@ -1,6 +1,10 @@
-package generic
+package strategy
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/Sinketsu/artifactsmmo/internal/generic"
+)
 
 type SimpleFightStrategy struct {
 	fight string
@@ -27,7 +31,7 @@ func (s *SimpleFightStrategy) Bank(items ...string) *SimpleFightStrategy {
 	return s
 }
 
-func (s *SimpleFightStrategy) Do(c *Character) error {
+func (s *SimpleFightStrategy) Do(c *generic.Character) error {
 	if s.fight == "" {
 		return fmt.Errorf("monster not set")
 	}

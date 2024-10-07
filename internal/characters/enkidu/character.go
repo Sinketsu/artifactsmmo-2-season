@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
+	"github.com/Sinketsu/artifactsmmo/internal/strategy"
 )
 
 type Character struct {
@@ -38,28 +39,18 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	if c.Data().WeaponcraftingLevel < 10 {
-		return generic.NewSimpleCraftStrategy().
-			Craft("copper_dagger").
-			Recycle("copper_dagger").
-			Do(&c.Character)
-	}
-
-	if c.Data().JewelrycraftingLevel < 10 {
-		return generic.NewSimpleCraftStrategy().
-			Craft("copper_ring").
-			Recycle("copper_ring").
-			Do(&c.Character)
-	}
-
-	if c.Data().GearcraftingLevel < 10 {
-		return generic.NewSimpleCraftStrategy().
-			Craft("copper_helmet").
-			Recycle("copper_helmet").
-			Do(&c.Character)
-	}
-
-	time.Sleep(1 * time.Second)
-	c.Log("idle...")
-	return nil
+	// return generic.NewSimpleFightStrategy().
+	// 	Fight("chicken").
+	// 	Bank("golden_egg", "feather").
+	// 	Sell("raw_chicken", "egg").
+	// 	Do(&c.Character)
+	return strategy.NewSimpleCraftStrategy().
+		Craft("cooked_trout").
+		Sell("cooked_trout").
+		Do(&c.Character)
+	// return generic.NewSimpleCraftStrategy().
+	// 	Craft("iron_boots").
+	// 	Recycle("iron_boots").
+	// 	Do(&c.Character)
+	// return nil
 }

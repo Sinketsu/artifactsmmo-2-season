@@ -6,14 +6,20 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/Sinketsu/artifactsmmo/internal/characters/cetcalcoatl"
 	"github.com/Sinketsu/artifactsmmo/internal/characters/enkidu"
 	"github.com/Sinketsu/artifactsmmo/internal/characters/ereshkigal"
 	"github.com/Sinketsu/artifactsmmo/internal/characters/ishtar"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
+	"github.com/Sinketsu/artifactsmmo/internal/monitoring"
 )
 
 func main() {
+	cli := monitoring.NewClient(os.Getenv("MONITORING_WRITE_URL"), os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN"))
+	go cli.Run(30 * time.Second)
+
 	serverParams := generic.ServerParams{
 		ServerUrl:   os.Getenv("SERVER_URL"),
 		ServerToken: os.Getenv("SERVER_TOKEN"),
@@ -27,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	Cetcalcoatl, err := ishtar.NewCharacter(generic.Params{
+	Cetcalcoatl, err := cetcalcoatl.NewCharacter(generic.Params{
 		CharacterName: "Cetcalcoatl",
 		ServerParams:  serverParams,
 	})

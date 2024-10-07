@@ -1,6 +1,10 @@
-package generic
+package strategy
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/Sinketsu/artifactsmmo/internal/generic"
+)
 
 type SimpleGatherStrategy struct {
 	gather string
@@ -33,7 +37,7 @@ func (s *SimpleGatherStrategy) Craft(item string) *SimpleGatherStrategy {
 	return s
 }
 
-func (s *SimpleGatherStrategy) Do(c *Character) error {
+func (s *SimpleGatherStrategy) Do(c *generic.Character) error {
 	if s.gather == "" {
 		return fmt.Errorf("gather resource not set")
 	}

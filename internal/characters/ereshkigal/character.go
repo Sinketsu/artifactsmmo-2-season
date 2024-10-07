@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
+	"github.com/Sinketsu/artifactsmmo/internal/strategy"
 )
 
 type Character struct {
@@ -38,8 +39,8 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	return generic.NewSimpleFightStrategy().
-		Fight("yellow_slime").
-		Bank("yellow_slimeball", "green_slimeball", "feather").
+	return strategy.NewSimpleFightStrategy().
+		Fight("death_knight").
+		Bank("vampire_blood", "red_cloth").
 		Do(&c.Character)
 }
