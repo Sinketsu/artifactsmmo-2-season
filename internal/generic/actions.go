@@ -10,6 +10,8 @@ import (
 )
 
 func (c *Character) Gather() (api.SkillDataSchemaDetails, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionGatheringMyNameActionGatheringPost(context.Background(), api.ActionGatheringMyNameActionGatheringPostParams{Name: c.name})
 	if err != nil {
 		return api.SkillDataSchemaDetails{}, err
@@ -42,6 +44,8 @@ func (c *Character) Move(x, y int) error {
 		return nil
 	}
 
+	requestCount.Inc()
+
 	res, err := c.cli.ActionMoveMyNameActionMovePost(context.Background(), &api.DestinationSchema{X: x, Y: y}, api.ActionMoveMyNameActionMovePostParams{Name: c.name})
 	if err != nil {
 		return err
@@ -57,7 +61,8 @@ func (c *Character) Move(x, y int) error {
 	case *api.ActionMoveMyNameActionMovePostCode486:
 		return fmt.Errorf("already moving...")
 	case *api.ActionMoveMyNameActionMovePostCode490:
-		return fmt.Errorf("character already at point")
+		// character already at point
+		return nil
 	case *api.ActionMoveMyNameActionMovePostCode498:
 		return fmt.Errorf("character not found")
 	case *api.ActionMoveMyNameActionMovePostCode499:
@@ -68,6 +73,8 @@ func (c *Character) Move(x, y int) error {
 }
 
 func (c *Character) Sell(code string, quantity int, price int) (int, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionGeSellItemMyNameActionGeSellPost(context.Background(), &api.GETransactionItemSchema{Code: code, Quantity: quantity, Price: price}, api.ActionGeSellItemMyNameActionGeSellPostParams{Name: c.name})
 	if err != nil {
 		return 0, err
@@ -102,6 +109,8 @@ func (c *Character) Sell(code string, quantity int, price int) (int, error) {
 }
 
 func (c *Character) GetGEItem(code string) (api.GEItemSchema, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.GetGeItemGeCodeGet(context.Background(), api.GetGeItemGeCodeGetParams{Code: code})
 	if err != nil {
 		return api.GEItemSchema{}, err
@@ -118,6 +127,8 @@ func (c *Character) GetGEItem(code string) (api.GEItemSchema, error) {
 }
 
 func (c *Character) GetItem(code string) (api.SingleItemSchemaItem, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.GetItemItemsCodeGet(context.Background(), api.GetItemItemsCodeGetParams{Code: code})
 	if err != nil {
 		return api.SingleItemSchemaItem{}, err
@@ -134,6 +145,8 @@ func (c *Character) GetItem(code string) (api.SingleItemSchemaItem, error) {
 }
 
 func (c *Character) Fight() (api.CharacterFightDataSchemaFight, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionFightMyNameActionFightPost(context.Background(), api.ActionFightMyNameActionFightPostParams{Name: c.name})
 	if err != nil {
 		return api.CharacterFightDataSchemaFight{}, err
@@ -164,6 +177,8 @@ func (c *Character) Fight() (api.CharacterFightDataSchemaFight, error) {
 }
 
 func (c *Character) Craft(code string, quantity int) (api.SkillDataSchemaDetails, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionCraftingMyNameActionCraftingPost(context.Background(), &api.CraftingSchema{Code: code, Quantity: api.NewOptInt(quantity)}, api.ActionCraftingMyNameActionCraftingPostParams{Name: c.name})
 	if err != nil {
 		return api.SkillDataSchemaDetails{}, err
@@ -196,6 +211,8 @@ func (c *Character) Craft(code string, quantity int) (api.SkillDataSchemaDetails
 }
 
 func (c *Character) Withdraw(code string, quantity int) error {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionWithdrawBankMyNameActionBankWithdrawPost(context.Background(), &api.SimpleItemSchema{Code: code, Quantity: quantity}, api.ActionWithdrawBankMyNameActionBankWithdrawPostParams{Name: c.name})
 	if err != nil {
 		return err
@@ -228,6 +245,8 @@ func (c *Character) Withdraw(code string, quantity int) error {
 }
 
 func (c *Character) Deposit(code string, quantity int) error {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionDepositBankMyNameActionBankDepositPost(context.Background(), &api.SimpleItemSchema{Code: code, Quantity: quantity}, api.ActionDepositBankMyNameActionBankDepositPostParams{Name: c.name})
 	if err != nil {
 		return err
@@ -260,6 +279,8 @@ func (c *Character) Deposit(code string, quantity int) error {
 }
 
 func (c *Character) FindOnMap(code string) ([]api.MapSchema, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.GetAllMapsMapsGet(context.Background(), api.GetAllMapsMapsGetParams{ContentCode: api.NewOptString(code)})
 	if err != nil {
 		return nil, err
@@ -269,6 +290,8 @@ func (c *Character) FindOnMap(code string) ([]api.MapSchema, error) {
 }
 
 func (c *Character) GetResource(code string) (api.ResourceSchema, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.GetResourceResourcesCodeGet(context.Background(), api.GetResourceResourcesCodeGetParams{Code: code})
 	if err != nil {
 		return api.ResourceSchema{}, err
@@ -285,6 +308,8 @@ func (c *Character) GetResource(code string) (api.ResourceSchema, error) {
 }
 
 func (c *Character) GetMonster(code string) (api.MonsterSchema, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.GetMonsterMonstersCodeGet(context.Background(), api.GetMonsterMonstersCodeGetParams{Code: code})
 	if err != nil {
 		return api.MonsterSchema{}, err
@@ -301,6 +326,8 @@ func (c *Character) GetMonster(code string) (api.MonsterSchema, error) {
 }
 
 func (c *Character) Recycle(code string, quantity int) (api.RecyclingDataSchemaDetails, error) {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionRecyclingMyNameActionRecyclingPost(context.Background(), &api.RecyclingSchema{Code: code, Quantity: api.NewOptInt(quantity)}, api.ActionRecyclingMyNameActionRecyclingPostParams{Name: c.name})
 	if err != nil {
 		return api.RecyclingDataSchemaDetails{}, err
@@ -335,6 +362,8 @@ func (c *Character) Recycle(code string, quantity int) (api.RecyclingDataSchemaD
 }
 
 func (c *Character) Equip(code string, slot string, quantity int) error {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionEquipItemMyNameActionEquipPost(context.Background(), &api.EquipSchema{Code: code, Slot: api.EquipSchemaSlot(slot), Quantity: api.NewOptInt(quantity)}, api.ActionEquipItemMyNameActionEquipPostParams{Name: c.name})
 	if err != nil {
 		return err
@@ -371,6 +400,8 @@ func (c *Character) Equip(code string, slot string, quantity int) error {
 }
 
 func (c *Character) UnEquip(code string, slot string, quantity int) error {
+	requestCount.Inc()
+
 	res, err := c.cli.ActionUnequipItemMyNameActionUnequipPost(context.Background(), &api.UnequipSchema{Slot: api.UnequipSchemaSlot(slot), Quantity: api.NewOptInt(quantity)}, api.ActionUnequipItemMyNameActionUnequipPostParams{Name: c.name})
 	if err != nil {
 		return err
@@ -397,5 +428,93 @@ func (c *Character) UnEquip(code string, slot string, quantity int) error {
 		return fmt.Errorf("cooldown")
 	default:
 		return fmt.Errorf("unknown answer type: %v", v)
+	}
+}
+
+func (c *Character) CompleteTask() (api.TasksRewardDataSchemaReward, error) {
+	requestCount.Inc()
+
+	res, err := c.cli.ActionCompleteTaskMyNameActionTaskCompletePost(context.Background(), api.ActionCompleteTaskMyNameActionTaskCompletePostParams{Name: c.name})
+	if err != nil {
+		return api.TasksRewardDataSchemaReward{}, err
+	}
+
+	switch v := res.(type) {
+	case *api.TasksRewardResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return v.Data.Reward, c.updateData(unsafe.Pointer(&v.Data.Character))
+	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode486:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("action is already in progress by your character")
+	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode487:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("character has no task")
+	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode488:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("character has not completed the task")
+	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode497:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("inventory is full")
+	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode498:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("character not found")
+	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode499:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("cooldown")
+	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode598:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("tasks master is not at this tile map")
+	default:
+		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("unknown answer type")
+	}
+}
+
+func (c *Character) AcceptNewTask() (api.TaskDataSchemaTask, error) {
+	requestCount.Inc()
+
+	res, err := c.cli.ActionAcceptNewTaskMyNameActionTaskNewPost(context.Background(), api.ActionAcceptNewTaskMyNameActionTaskNewPostParams{Name: c.name})
+	if err != nil {
+		return api.TaskDataSchemaTask{}, err
+	}
+
+	switch v := res.(type) {
+	case *api.TaskResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return v.Data.Task, c.updateData(unsafe.Pointer(&v.Data.Character))
+	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode486:
+		return api.TaskDataSchemaTask{}, fmt.Errorf("action is already in progress by your character")
+	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode489:
+		return api.TaskDataSchemaTask{}, fmt.Errorf("character already has a task")
+	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode498:
+		return api.TaskDataSchemaTask{}, fmt.Errorf("character not found")
+	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode499:
+		return api.TaskDataSchemaTask{}, fmt.Errorf("cooldown")
+	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode598:
+		return api.TaskDataSchemaTask{}, fmt.Errorf("tasks master is not at this tile map")
+	default:
+		return api.TaskDataSchemaTask{}, fmt.Errorf("unknown answer type")
+	}
+}
+
+func (c *Character) CancelTask() error {
+	requestCount.Inc()
+
+	res, err := c.cli.ActionTaskCancelMyNameActionTaskCancelPost(context.Background(), api.ActionTaskCancelMyNameActionTaskCancelPostParams{Name: c.name})
+	if err != nil {
+		return err
+	}
+
+	switch v := res.(type) {
+	case *api.TaskCancelledResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return c.updateData(unsafe.Pointer(&v.Data.Character))
+	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode478:
+		return fmt.Errorf("missing item or insufficient quantity")
+	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode486:
+		return fmt.Errorf("action is already in progress by your character")
+	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode498:
+		return fmt.Errorf("character not found")
+	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode499:
+		return fmt.Errorf("cooldown")
+	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode598:
+		return fmt.Errorf("tasks master is not at this tile map")
+	default:
+		return fmt.Errorf("unknown answer type")
 	}
 }

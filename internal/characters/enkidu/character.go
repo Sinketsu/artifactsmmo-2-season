@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 	"github.com/Sinketsu/artifactsmmo/internal/strategy"
 )
@@ -23,13 +24,13 @@ func NewCharacter(params generic.Params) (*Character, error) {
 	}, nil
 }
 
-func (c *Character) Live(ctx context.Context) {
+func (c *Character) Live(ctx context.Context, events *events.Service) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			err := c.do()
+			err := c.do(events)
 			if err != nil {
 				c.Log(err)
 				time.Sleep(1 * time.Second)
@@ -38,7 +39,8 @@ func (c *Character) Live(ctx context.Context) {
 	}
 }
 
-func (c *Character) do() error {
+func (c *Character) do(events *events.Service) error {
+	// return nil
 	// return generic.NewSimpleFightStrategy().
 	// 	Fight("chicken").
 	// 	Bank("golden_egg", "feather").

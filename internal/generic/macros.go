@@ -533,3 +533,48 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 	}
 	return nil
 }
+
+func (c *Character) MacroCompleteMonsterTask() error {
+	err := c.Move(1, 2) // Task master monsters
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	reward, err := c.CompleteTask()
+	if err != nil {
+		return fmt.Errorf("complete task: %w", err)
+	}
+
+	c.Log("completed task, got", reward.Quantity, reward.Code)
+	return nil
+}
+
+func (c *Character) MacroNewMonsterTask() error {
+	err := c.Move(1, 2) // Task master monsters
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	task, err := c.AcceptNewTask()
+	if err != nil {
+		return fmt.Errorf("complete task: %w", err)
+	}
+
+	c.Log("accept new task:", task.Total, task.Code)
+	return nil
+}
+
+func (c *Character) MacroCancelMonsterTask() error {
+	err := c.Move(1, 2) // Task master monsters
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	err = c.CancelTask()
+	if err != nil {
+		return fmt.Errorf("cancel task: %w", err)
+	}
+
+	c.Log("cancelled task")
+	return nil
+}

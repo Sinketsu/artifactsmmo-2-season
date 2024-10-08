@@ -129,7 +129,7 @@ func NewCounter(name string, labels ...string) *Counter {
 	return c
 }
 
-func (g *Counter) Inc(value int64, values ...string) {
+func (g *Counter) Inc(values ...string) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -146,10 +146,10 @@ func (g *Counter) Inc(value int64, values ...string) {
 	}
 
 	if idx != -1 {
-		g.metrics[idx].Value += value
+		g.metrics[idx].Value += 1
 	} else {
 		g.metrics = append(g.metrics, CounterMetric{
-			Value:       value,
+			Value:       1,
 			LabelValues: values,
 		})
 	}

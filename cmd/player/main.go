@@ -12,6 +12,7 @@ import (
 	"github.com/Sinketsu/artifactsmmo/internal/characters/enkidu"
 	"github.com/Sinketsu/artifactsmmo/internal/characters/ereshkigal"
 	"github.com/Sinketsu/artifactsmmo/internal/characters/ishtar"
+	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 	"github.com/Sinketsu/artifactsmmo/internal/monitoring"
 )
@@ -24,6 +25,9 @@ func main() {
 		ServerUrl:   os.Getenv("SERVER_URL"),
 		ServerToken: os.Getenv("SERVER_TOKEN"),
 	}
+
+	events := events.New(serverParams)
+	go events.Update(1 * time.Minute)
 
 	Ishtar, err := ishtar.NewCharacter(generic.Params{
 		CharacterName: "Ishtar",
@@ -59,10 +63,10 @@ func main() {
 
 	ctx, stopNotify := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	go Ishtar.Live(ctx)
-	go Ereshkigal.Live(ctx)
-	go Enkidu.Live(ctx)
-	go Cetcalcoatl.Live(ctx)
+	go Ishtar.Live(ctx, events)
+	go Ereshkigal.Live(ctx, events)
+	go Enkidu.Live(ctx, events)
+	go Cetcalcoatl.Live(ctx, events)
 
 	<-ctx.Done()
 	fmt.Println("got stop signal...")

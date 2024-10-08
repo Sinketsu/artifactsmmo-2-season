@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 	"github.com/Sinketsu/artifactsmmo/internal/strategy"
 )
@@ -23,13 +24,13 @@ func NewCharacter(params generic.Params) (*Character, error) {
 	}, nil
 }
 
-func (c *Character) Live(ctx context.Context) {
+func (c *Character) Live(ctx context.Context, events *events.Service) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			err := c.do()
+			err := c.do(events)
 			if err != nil {
 				c.Log(err)
 				time.Sleep(1 * time.Second)
@@ -38,7 +39,7 @@ func (c *Character) Live(ctx context.Context) {
 	}
 }
 
-func (c *Character) do() error {
+func (c *Character) do(events *events.Service) error {
 	if c.Data().FishingLevel < 20 {
 		return strategy.NewSimpleGatherStrategy().
 			Gather("shrimp_fishing_spot").
@@ -64,6 +65,22 @@ func (c *Character) do() error {
 		return strategy.NewSimpleGatherStrategy().
 			Gather("trout_fishing_spot").
 			Bank("sap", "birch_wood", "trout").
+			Do(&c.Character)
+	}
+
+	if c.Data().MiningLevel < 35 {
+		return strategy.NewSimpleGatherStrategy().
+			Gather("gold_rocks").
+			Craft("gold").
+			Bank("srimp", "trout", "gold", "sapphire", "ruby", "emerald", "topaz").
+			Do(&c.Character)
+	}
+
+	if c.Data().WoodcuttingLevel < 35 {
+		return strategy.NewSimpleGatherStrategy().
+			Gather("dead_tree").
+			Craft("dead_wood_plank").
+			Bank("srimp", "trout", "dead_wood_plank", "sap").
 			Do(&c.Character)
 	}
 

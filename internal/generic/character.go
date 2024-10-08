@@ -76,6 +76,7 @@ func (c *Character) updateData(p unsafe.Pointer) error {
 	c.data = *(*api.CharacterSchema)(p)
 
 	goldCount.Set(float64(c.data.Gold), c.name)
+	tasksCoinCount.Set(float64(c.InInventory("tasks_coin")), c.name)
 	return nil
 }
 
@@ -87,6 +88,17 @@ func (c *Character) InventoryItemCount() int {
 	count := 0
 	for _, item := range c.data.Inventory {
 		count += item.Quantity
+	}
+
+	return count
+}
+
+func (c *Character) EmptyInventorySlots() int {
+	count := 0
+	for _, item := range c.data.Inventory {
+		if item.Code == "" {
+			count++
+		}
 	}
 
 	return count
