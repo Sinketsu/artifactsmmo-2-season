@@ -23,7 +23,14 @@ type Character struct {
 	name string
 	data api.CharacterSchema
 
-	craftData CraftData
+	// cache FindOnMap
+	mapsCache map[string]api.MapSchema
+	// cache GetItem
+	itemsCache map[string]api.SingleItemSchemaItem
+	// cache GetMonster
+	monsterCache map[string]api.MonsterSchema
+	// cache GetResource
+	resourceCache map[string]api.ResourceSchema
 
 	cli *api.Client
 }
@@ -37,6 +44,11 @@ func NewCharacter(params Params) (*Character, error) {
 	character := &Character{
 		name: params.CharacterName,
 		cli:  client,
+
+		mapsCache:     make(map[string]api.MapSchema),
+		itemsCache:    make(map[string]api.SingleItemSchemaItem),
+		monsterCache:  make(map[string]api.MonsterSchema),
+		resourceCache: make(map[string]api.ResourceSchema),
 	}
 
 	if err := character.initData(); err != nil {
@@ -72,6 +84,7 @@ func (c *Character) Log(msg ...any) {
 }
 
 func (c *Character) updateData(p unsafe.Pointer) error {
+	// tricky hack, because `ogen` generates different models for Character state from different methods instead of reusing one. But fields are the same - so we can cast it
 	c.data = *(*api.CharacterSchema)(p)
 
 	goldCount.Set(float64(c.data.Gold), c.name)
@@ -81,51 +94,4 @@ func (c *Character) updateData(p unsafe.Pointer) error {
 
 func (c *Character) Data() api.CharacterSchema {
 	return c.data
-}
-
-func (c *Character) InventoryItemCount() int {
-	count := 0
-	for _, item := range c.data.Inventory {
-		count += item.Quantity
-	}
-
-	return count
-}
-
-func (c *Character) EmptyInventorySlots() int {
-	count := 0
-	for _, item := range c.data.Inventory {
-		if item.Code == "" {
-			count++
-		}
-	}
-
-	return count
-}
-
-func (c *Character) InInventory(code string) int {
-	for _, item := range c.data.Inventory {
-		if item.Code == code {
-			return item.Quantity
-		}
-	}
-
-	return 0
-}
-
-func (c *Character) InBank(code string) (int, error) {
-	res, err := c.cli.GetBankItemsMyBankItemsGet(context.Background(), api.GetBankItemsMyBankItemsGetParams{ItemCode: api.NewOptString(code)})
-	if err != nil {
-		return 0, err
-	}
-
-	if len(res.Data) == 0 {
-		return 0, nil
-	}
-
-	return res.Data[0].Quantity, nil
-}
-
-func (c *Character) InventoryIsFull() bool {
-	return c.InventoryItemCount() == c.Data().InventoryMaxItems || c.EmptyInventorySlots() == 0
 }

@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -8,15 +9,8 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
-type ICharacter interface {
-	GetMonster(string) (api.MonsterSchema, error)
-	Data() api.CharacterSchema
-	GetItem(code string) (api.SingleItemSchemaItem, error)
-	Log(msg ...any)
-}
-
-func GetBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaItem, error) {
-	monster, err := c.GetMonster(monsterCode)
+func (c *Character) GetBestGearFor(monsterCode string) ([][]api.SingleItemSchemaItem, error) {
+	monster, err := c.GetMonster(monsterCode, true)
 	if err != nil {
 		return nil, fmt.Errorf("get monster: %w", err)
 	}
@@ -27,7 +21,7 @@ func GetBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaI
 			continue
 		}
 
-		item, err := c.GetItem(i.Code)
+		item, err := c.GetItem(i.Code, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", i.Code, err)
 		}
@@ -53,63 +47,63 @@ func GetBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaI
 	}
 
 	if c.Data().WeaponSlot != "" {
-		item, err := c.GetItem(c.Data().WeaponSlot)
+		item, err := c.GetItem(c.Data().WeaponSlot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().WeaponSlot, err)
 		}
 		weapons = append(weapons, item)
 	}
 	if c.Data().HelmetSlot != "" {
-		item, err := c.GetItem(c.Data().HelmetSlot)
+		item, err := c.GetItem(c.Data().HelmetSlot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().HelmetSlot, err)
 		}
 		helmets = append(helmets, item)
 	}
 	if c.Data().BodyArmorSlot != "" {
-		item, err := c.GetItem(c.Data().BodyArmorSlot)
+		item, err := c.GetItem(c.Data().BodyArmorSlot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().BodyArmorSlot, err)
 		}
 		bodyArmors = append(bodyArmors, item)
 	}
 	if c.Data().LegArmorSlot != "" {
-		item, err := c.GetItem(c.Data().LegArmorSlot)
+		item, err := c.GetItem(c.Data().LegArmorSlot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().LegArmorSlot, err)
 		}
 		legsArmors = append(legsArmors, item)
 	}
 	if c.Data().BootsSlot != "" {
-		item, err := c.GetItem(c.Data().BootsSlot)
+		item, err := c.GetItem(c.Data().BootsSlot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().BootsSlot, err)
 		}
 		boots = append(boots, item)
 	}
 	if c.Data().ShieldSlot != "" {
-		item, err := c.GetItem(c.Data().ShieldSlot)
+		item, err := c.GetItem(c.Data().ShieldSlot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().ShieldSlot, err)
 		}
 		shields = append(shields, item)
 	}
 	if c.Data().Ring1Slot != "" {
-		item, err := c.GetItem(c.Data().Ring1Slot)
+		item, err := c.GetItem(c.Data().Ring1Slot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().Ring1Slot, err)
 		}
 		rings = append(rings, item)
 	}
 	if c.Data().Ring2Slot != "" {
-		item, err := c.GetItem(c.Data().Ring2Slot)
+		item, err := c.GetItem(c.Data().Ring2Slot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().Ring2Slot, err)
 		}
 		rings = append(rings, item)
 	}
 	if c.Data().AmuletSlot != "" {
-		item, err := c.GetItem(c.Data().AmuletSlot)
+		item, err := c.GetItem(c.Data().AmuletSlot, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", c.Data().AmuletSlot, err)
 		}
@@ -171,4 +165,51 @@ func GetBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaI
 	c.Log("found best gear for monster", monster.Code, "with effective dmg:", bestScore, "[", strings.Join(bestGearCodes, ", "), "]")
 
 	return bestGear, nil
+}
+
+func (c *Character) InventoryItemCount() int {
+	count := 0
+	for _, item := range c.data.Inventory {
+		count += item.Quantity
+	}
+
+	return count
+}
+
+func (c *Character) EmptyInventorySlots() int {
+	count := 0
+	for _, item := range c.data.Inventory {
+		if item.Code == "" {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (c *Character) InInventory(code string) int {
+	for _, item := range c.data.Inventory {
+		if item.Code == code {
+			return item.Quantity
+		}
+	}
+
+	return 0
+}
+
+func (c *Character) InBank(code string) (int, error) {
+	res, err := c.cli.GetBankItemsMyBankItemsGet(context.Background(), api.GetBankItemsMyBankItemsGetParams{ItemCode: api.NewOptString(code)})
+	if err != nil {
+		return 0, err
+	}
+
+	if len(res.Data) == 0 {
+		return 0, nil
+	}
+
+	return res.Data[0].Quantity, nil
+}
+
+func (c *Character) InventoryIsFull() bool {
+	return c.InventoryItemCount() == c.Data().InventoryMaxItems || c.EmptyInventorySlots() == 0
 }

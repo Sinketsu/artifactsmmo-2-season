@@ -90,7 +90,7 @@ func (c *Character) MacroFight(x, y int) error {
 }
 
 func (c *Character) MacroCheckCraftResources(code string) (int, error) {
-	item, err := c.GetItem(code)
+	item, err := c.GetItem(code, true)
 	if err != nil {
 		return 0, fmt.Errorf("get item: %w", err)
 	}
@@ -111,27 +111,17 @@ func (c *Character) MacroCheckCraftResources(code string) (int, error) {
 }
 
 func (c *Character) MacroCraft(code string, quantity int) error {
-	if c.craftData.Code != code {
-		item, err := c.GetItem(code)
-		if err != nil {
-			return fmt.Errorf("get item: %w", err)
-		}
-
-		tiles, err := c.FindOnMap(string(item.Craft.Value.CraftSchema.Skill.Value))
-		if err != nil {
-			return fmt.Errorf("find on map: %w", err)
-		}
-
-		if len(tiles) == 0 {
-			return fmt.Errorf("find on map: not found")
-		}
-
-		c.craftData.X = tiles[0].X
-		c.craftData.Y = tiles[0].Y
-		c.craftData.Code = code
+	item, err := c.GetItem(code, true)
+	if err != nil {
+		return fmt.Errorf("get item: %w", err)
 	}
 
-	err := c.Move(c.craftData.X, c.craftData.Y)
+	workshop, err := c.FindOnMap(string(item.Craft.Value.CraftSchema.Skill.Value), true)
+	if err != nil {
+		return fmt.Errorf("find on map: %w", err)
+	}
+
+	err = c.Move(workshop.X, workshop.Y)
 	if err != nil {
 		return fmt.Errorf("move: %w", err)
 	}
@@ -151,17 +141,17 @@ func (c *Character) MacroRecycleAll(codes ...string) error {
 			continue
 		}
 
-		item, err := c.GetItem(code)
+		item, err := c.GetItem(code, true)
 		if err != nil {
 			return fmt.Errorf("get item: %w", err)
 		}
 
-		tiles, err := c.FindOnMap(string(item.Craft.Value.CraftSchema.Skill.Value))
+		workshop, err := c.FindOnMap(string(item.Craft.Value.CraftSchema.Skill.Value), true)
 		if err != nil {
 			return fmt.Errorf("find on map: %w", err)
 		}
 
-		if err := c.Move(tiles[0].X, tiles[0].Y); err != nil {
+		if err := c.Move(workshop.X, workshop.Y); err != nil {
 			return fmt.Errorf("move: %w", err)
 		}
 

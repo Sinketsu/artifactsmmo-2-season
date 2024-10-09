@@ -14,9 +14,11 @@ type SimpleFightStrategy struct {
 	events        *events.Service
 	allowedEvents []string
 
-	info fightInfo
+	// cache state for current mosnter
+	currentMonster string
 }
 
+// NewTasksFightStrategy returns strategy that will just simple fight against one monster
 func NewSimpleFightStrategy() *SimpleFightStrategy {
 	return &SimpleFightStrategy{}
 }
@@ -70,26 +72,22 @@ func (s *SimpleFightStrategy) Do(c *generic.Character) error {
 	if s.events != nil {
 		for _, eventName := range s.allowedEvents {
 			if event := s.events.Get(eventName); event != nil {
-				return s.fightHelper(c, event.Map.Content.MapContentSchema.Code)
+				return s.fightHelper(c, event.Map.Content.MapContentSchema.Code, false)
 			}
 		}
 	}
 
-	return s.fightHelper(c, s.fight)
+	return s.fightHelper(c, s.fight, true)
 }
 
-func (s *SimpleFightStrategy) fightHelper(c *generic.Character, code string) error {
-	if s.info.Code != code {
-		tiles, err := c.FindOnMap(code)
-		if err != nil {
-			return fmt.Errorf("find on map: %w", err)
-		}
+func (s *SimpleFightStrategy) fightHelper(c *generic.Character, code string, cachable bool) error {
+	tile, err := c.FindOnMap(code, cachable)
+	if err != nil {
+		return fmt.Errorf("find on map: %w", err)
+	}
 
-		if len(tiles) == 0 {
-			return fmt.Errorf("find on map: not found")
-		}
-
-		bestGear, err := generic.GetBestGearFor(c, code)
+	if s.currentMonster != code {
+		bestGear, err := c.GetBestGearFor(code)
 		if err != nil {
 			return fmt.Errorf("get best gear: %w", err)
 		}
@@ -100,10 +98,8 @@ func (s *SimpleFightStrategy) fightHelper(c *generic.Character, code string) err
 			}
 		}
 
-		s.info.X = tiles[0].X
-		s.info.Y = tiles[0].Y
-		s.info.Code = code
+		s.currentMonster = code
 	}
 
-	return c.MacroFight(s.info.X, s.info.Y)
+	return c.MacroFight(tile.X, tile.Y)
 }

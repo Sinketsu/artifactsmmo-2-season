@@ -126,7 +126,13 @@ func (c *Character) GetGEItem(code string) (api.GEItemSchema, error) {
 	}
 }
 
-func (c *Character) GetItem(code string) (api.SingleItemSchemaItem, error) {
+func (c *Character) GetItem(code string, cachable bool) (api.SingleItemSchemaItem, error) {
+	if cachable {
+		if item, ok := c.itemsCache[code]; ok {
+			return item, nil
+		}
+	}
+
 	requestCount.Inc()
 
 	res, err := c.cli.GetItemItemsCodeGet(context.Background(), api.GetItemItemsCodeGetParams{Code: code})
@@ -136,6 +142,10 @@ func (c *Character) GetItem(code string) (api.SingleItemSchemaItem, error) {
 
 	switch v := res.(type) {
 	case *api.ItemResponseSchema:
+		if cachable {
+			c.itemsCache[code] = v.Data.Item
+		}
+
 		return v.Data.Item, nil
 	case *api.GetItemItemsCodeGetNotFound:
 		return api.SingleItemSchemaItem{}, fmt.Errorf("item not found")
@@ -278,18 +288,38 @@ func (c *Character) Deposit(code string, quantity int) error {
 	}
 }
 
-func (c *Character) FindOnMap(code string) ([]api.MapSchema, error) {
+func (c *Character) FindOnMap(code string, cachable bool) (api.MapSchema, error) {
+	if cachable {
+		if tile, ok := c.mapsCache[code]; ok {
+			return tile, nil
+		}
+	}
+
 	requestCount.Inc()
 
 	res, err := c.cli.GetAllMapsMapsGet(context.Background(), api.GetAllMapsMapsGetParams{ContentCode: api.NewOptString(code)})
 	if err != nil {
-		return nil, err
+		return api.MapSchema{}, err
 	}
 
-	return res.Data, nil
+	if len(res.Data) == 0 {
+		return api.MapSchema{}, fmt.Errorf("not found")
+	}
+
+	if cachable {
+		c.mapsCache[code] = res.Data[0]
+	}
+
+	return res.Data[0], nil
 }
 
-func (c *Character) GetResource(code string) (api.ResourceSchema, error) {
+func (c *Character) GetResource(code string, cachable bool) (api.ResourceSchema, error) {
+	if cachable {
+		if resource, ok := c.resourceCache[code]; ok {
+			return resource, nil
+		}
+	}
+
 	requestCount.Inc()
 
 	res, err := c.cli.GetResourceResourcesCodeGet(context.Background(), api.GetResourceResourcesCodeGetParams{Code: code})
@@ -299,6 +329,10 @@ func (c *Character) GetResource(code string) (api.ResourceSchema, error) {
 
 	switch v := res.(type) {
 	case *api.ResourceResponseSchema:
+		if cachable {
+			c.resourceCache[code] = v.Data
+		}
+
 		return v.Data, nil
 	case *api.GetResourceResourcesCodeGetNotFound:
 		return api.ResourceSchema{}, fmt.Errorf("resource not found")
@@ -307,7 +341,13 @@ func (c *Character) GetResource(code string) (api.ResourceSchema, error) {
 	}
 }
 
-func (c *Character) GetMonster(code string) (api.MonsterSchema, error) {
+func (c *Character) GetMonster(code string, cachable bool) (api.MonsterSchema, error) {
+	if cachable {
+		if monster, ok := c.monsterCache[code]; ok {
+			return monster, nil
+		}
+	}
+
 	requestCount.Inc()
 
 	res, err := c.cli.GetMonsterMonstersCodeGet(context.Background(), api.GetMonsterMonstersCodeGetParams{Code: code})
@@ -317,6 +357,10 @@ func (c *Character) GetMonster(code string) (api.MonsterSchema, error) {
 
 	switch v := res.(type) {
 	case *api.MonsterResponseSchema:
+		if cachable {
+			c.monsterCache[code] = v.Data
+		}
+
 		return v.Data, nil
 	case *api.GetMonsterMonstersCodeGetNotFound:
 		return api.MonsterSchema{}, fmt.Errorf("monster not found")

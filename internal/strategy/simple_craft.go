@@ -5,43 +5,40 @@ import (
 	"math"
 	"time"
 
-	api "github.com/Sinketsu/artifactsmmo/gen/oas"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
-
-type craftData struct {
-	code        string
-	ingridients []api.SimpleItemSchema
-}
 
 type SimpleCraftStrategy struct {
 	craft   string
 	recycle []string
 	bank    []string
 	sell    []string
-
-	craftData craftData
 }
 
+// NewTasksFightStrategy returns strategy that will just try spend all resources to craft one item
 func NewSimpleCraftStrategy() *SimpleCraftStrategy {
 	return &SimpleCraftStrategy{}
 }
 
+// Craft sets an item to craft. Required
 func (s *SimpleCraftStrategy) Craft(item string) *SimpleCraftStrategy {
 	s.craft = item
 	return s
 }
 
+// Recycle sets items to recycle after craft
 func (s *SimpleCraftStrategy) Recycle(items ...string) *SimpleCraftStrategy {
 	s.recycle = items
 	return s
 }
 
+// Sell sets items to sell in GE after craft
 func (s *SimpleCraftStrategy) Sell(items ...string) *SimpleCraftStrategy {
 	s.sell = items
 	return s
 }
 
+// Bank sets items to deposit in Bank after craft
 func (s *SimpleCraftStrategy) Bank(items ...string) *SimpleCraftStrategy {
 	s.bank = items
 	return s
@@ -70,24 +67,26 @@ func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	if s.craftData.code != s.craft {
-		item, err := c.GetItem(s.craft)
-		if err != nil {
-			return fmt.Errorf("get item: %w", err)
-		}
+	return s.crafttHelper(c)
+}
 
-		if !item.Craft.Set {
-			return fmt.Errorf("item is not craftable")
-		}
-
-		s.craftData.ingridients = item.Craft.Value.CraftSchema.Items
-		s.craftData.code = s.craft
+func (s *SimpleCraftStrategy) crafttHelper(c *generic.Character) error {
+	item, err := c.GetItem(s.craft, true)
+	if err != nil {
+		return fmt.Errorf("get item: %w", err)
 	}
 
+	if !item.Craft.Set {
+		return fmt.Errorf("item is not craftable")
+	}
+
+	ingridients := item.Craft.Value.CraftSchema.Items
+
+	// main craft logic
 	space := c.Data().InventoryMaxItems - c.InventoryItemCount()
 	ingridientCount := 0
 	minAvailableCount := 99999999
-	for _, ing := range s.craftData.ingridients {
+	for _, ing := range ingridients {
 		inventory := c.InInventory(ing.Code)
 		bank, _ := c.InBank(ing.Code)
 
@@ -109,7 +108,7 @@ func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
 	trueCount := int(math.Min(float64(minAvailableCount), float64(spaceAvailableCount)))
 
 	if trueCount > 0 {
-		for _, ing := range s.craftData.ingridients {
+		for _, ing := range ingridients {
 			inventory := c.InInventory(ing.Code)
 
 			withdraw := trueCount*ing.Quantity - inventory
