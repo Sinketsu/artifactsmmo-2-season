@@ -15,7 +15,7 @@ type ICharacter interface {
 	Log(msg ...any)
 }
 
-func getBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaItem, error) {
+func GetBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaItem, error) {
 	monster, err := c.GetMonster(monsterCode)
 	if err != nil {
 		return nil, fmt.Errorf("get monster: %w", err)
@@ -162,13 +162,13 @@ func getBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaI
 		}
 	}
 
-	bestGearCodes := make([]string, len(bestGear))
+	bestGearCodes := make([]string, 0, len(bestGear))
 	for _, gears := range bestGear {
 		for _, gear := range gears {
 			bestGearCodes = append(bestGearCodes, gear.Code)
 		}
 	}
-	c.Log("found best gear with effective dmg:", bestScore, "[", strings.Join(bestGearCodes, ", "), "]")
+	c.Log("found best gear for monster", monster.Code, "with effective dmg:", bestScore, "[", strings.Join(bestGearCodes, ", "), "]")
 
 	return bestGear, nil
 }

@@ -6,10 +6,14 @@ import (
 
 	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
+	"github.com/Sinketsu/artifactsmmo/internal/strategy"
 )
 
 type Character struct {
 	generic.Character
+
+	what     string
+	strategy strategy.Strategy
 }
 
 func NewCharacter(params generic.Params) *Character {
@@ -39,5 +43,18 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 }
 
 func (c *Character) do() error {
-	return nil
+	c.setStrategy(
+		"nothing to do...",
+		strategy.EmptyStrategy(),
+	)
+
+	return c.strategy.Do(&c.Character)
+}
+
+func (c *Character) setStrategy(what string, newStrategy strategy.Strategy) {
+	if c.what != what {
+		c.Log("change strategy:", what)
+		c.strategy = newStrategy
+		c.what = what
+	}
 }

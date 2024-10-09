@@ -20,11 +20,10 @@ type Params struct {
 }
 
 type Character struct {
-	name       string
-	data       api.CharacterSchema
-	gatherData GaterData
-	fightData  FightData
-	craftData  CraftData
+	name string
+	data api.CharacterSchema
+
+	craftData CraftData
 
 	cli *api.Client
 }
@@ -125,4 +124,8 @@ func (c *Character) InBank(code string) (int, error) {
 	}
 
 	return res.Data[0].Quantity, nil
+}
+
+func (c *Character) InventoryIsFull() bool {
+	return c.InventoryItemCount() == c.Data().InventoryMaxItems || c.EmptyInventorySlots() == 0
 }

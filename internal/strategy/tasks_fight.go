@@ -2,56 +2,54 @@ package strategy
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
-type SimpleFightStrategy struct {
-	fight         string
+type tasksFightStrategy struct {
 	sell          []string
 	bank          []string
+	cancelTasks   []string
 	events        *events.Service
 	allowedEvents []string
 
 	info fightInfo
 }
 
-func NewSimpleFightStrategy() *SimpleFightStrategy {
-	return &SimpleFightStrategy{}
-}
-
-// Fight sets a monster to fight. Required
-func (s *SimpleFightStrategy) Fight(monster string) *SimpleFightStrategy {
-	s.fight = monster
-	return s
+// NewTasksFightStrategy returns strategy that will do monster task quests
+func NewTasksFightStrategy() *tasksFightStrategy {
+	return &tasksFightStrategy{}
 }
 
 // Sell sets items to sell in GE when inventory is full
-func (s *SimpleFightStrategy) Sell(items ...string) *SimpleFightStrategy {
+func (s *tasksFightStrategy) Sell(items ...string) *tasksFightStrategy {
 	s.sell = items
 	return s
 }
 
 // Bank sets items to deposit in Bank when inventory is full
-func (s *SimpleFightStrategy) Bank(items ...string) *SimpleFightStrategy {
+func (s *tasksFightStrategy) Bank(items ...string) *tasksFightStrategy {
 	s.bank = items
 	return s
 }
 
+// CancelTasks sets a list of blacklisted tasks - which we do not want to do (too weak or ineffective)
+func (s *tasksFightStrategy) CancelTasks(monsters ...string) *tasksFightStrategy {
+	s.cancelTasks = monsters
+	return s
+}
+
 // AllowEvents sets list of allowed events. When event will be active - fight against event monsters, else fight against usual monster, setted in Fight
-func (s *SimpleFightStrategy) AllowEvents(events *events.Service, names ...string) *SimpleFightStrategy {
+func (s *tasksFightStrategy) AllowEvents(events *events.Service, names ...string) *tasksFightStrategy {
 	s.allowedEvents = names
 	s.events = events
 	return s
 }
 
-func (s *SimpleFightStrategy) Do(c *generic.Character) error {
-	if s.fight == "" {
-		return fmt.Errorf("monster not set")
-	}
-
-	if c.InventoryItemCount() == c.Data().InventoryMaxItems {
+func (s *tasksFightStrategy) Do(c *generic.Character) error {
+	if c.InventoryItemCount() == c.Data().InventoryMaxItems || c.EmptyInventorySlots() == 0 {
 		c.Log("inventory is full - going to bank, GE...")
 
 		if len(s.bank) > 0 {
@@ -75,10 +73,30 @@ func (s *SimpleFightStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	return s.fightHelper(c, s.fight)
+	if c.Data().Task == "" {
+		if err := c.MacroNewMonsterTask(); err != nil {
+			return fmt.Errorf("accept new task: %w", err)
+		}
+	}
+
+	if c.Data().TaskProgress == c.Data().TaskTotal {
+		if err := c.MacroCompleteMonsterTask(); err != nil {
+			return fmt.Errorf("complete task: %w", err)
+		}
+	}
+
+	if slices.Contains(s.cancelTasks, c.Data().Task) {
+		if err := c.MacroCancelMonsterTask(); err != nil {
+			return fmt.Errorf("cancel task: %w", err)
+		}
+
+		return nil
+	}
+
+	return s.fightHelper(c, c.Data().Task)
 }
 
-func (s *SimpleFightStrategy) fightHelper(c *generic.Character, code string) error {
+func (s *tasksFightStrategy) fightHelper(c *generic.Character, code string) error {
 	if s.info.Code != code {
 		tiles, err := c.FindOnMap(code)
 		if err != nil {

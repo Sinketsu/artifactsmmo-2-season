@@ -59,6 +59,7 @@ func (c *Character) do(events *events.Service) error {
 				AllowEvents(events, "Strange Apparition").
 				Gather("dead_tree").
 				Craft("dead_wood_plank").
+				Sell("shrimp", "iron_ore", "spruce_wood", "yellow_slimeball", "red_slimeball", "gold_ore").
 				Bank("dead_wood_plank", "sap", "diamond", "strange_ore"),
 		)
 	case c.Data().FishingLevel < 40:

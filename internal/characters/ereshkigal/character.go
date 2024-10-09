@@ -11,6 +11,9 @@ import (
 
 type Character struct {
 	generic.Character
+
+	what     string
+	strategy strategy.Strategy
 }
 
 func NewCharacter(params generic.Params) *Character {
@@ -40,14 +43,26 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 }
 
 func (c *Character) do(events *events.Service) error {
-	return strategy.NewSimpleFightStrategy().
-		Bank("owlbear_hair", "golden_egg", "red_cloth", "skeleton_bone", "skeleton_skull",
-			"vampire_blood", "flying_wing", "serpent_skin", "ogre_eye", "ogre_skin",
-			"bandit_armor", "demon_horn", "piece_of_obsidian").
-		Sell("mushroom", "red_slimeball", "yellow_slimeball", "blue_slimeball", "green_slimeball",
-			"raw_beef", "milk_bucket", "cowhide", "raw_wolf_meat", "wolf_bone", "wolf_hair",
-			"raw_chicken", "egg", "feather", "pig_skin", "lizard_skin").
-		CancelTasks("lich", "cultist_acolyte", "imp", "bat").
-		AllowEvents(events, "Bandit Camp", "Portal").
-		DoTasks(&c.Character)
+	c.setStrategy(
+		"do monster tasks",
+		strategy.NewTasksFightStrategy().
+			Bank("owlbear_hair", "golden_egg", "red_cloth", "skeleton_bone", "skeleton_skull",
+				"vampire_blood", "flying_wing", "serpent_skin", "ogre_eye", "ogre_skin",
+				"bandit_armor", "demon_horn", "piece_of_obsidian").
+			Sell("mushroom", "red_slimeball", "yellow_slimeball", "blue_slimeball", "green_slimeball",
+				"raw_beef", "milk_bucket", "cowhide", "raw_wolf_meat", "wolf_bone", "wolf_hair",
+				"raw_chicken", "egg", "feather", "pig_skin", "lizard_skin").
+			CancelTasks("lich", "cultist_acolyte", "imp", "bat").
+			AllowEvents(events, "Bandit Camp", "Portal"),
+	)
+
+	return c.strategy.Do(&c.Character)
+}
+
+func (c *Character) setStrategy(what string, newStrategy strategy.Strategy) {
+	if c.what != what {
+		c.Log("change strategy:", what)
+		c.strategy = newStrategy
+		c.what = what
+	}
 }

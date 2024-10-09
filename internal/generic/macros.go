@@ -61,50 +61,8 @@ func (c *Character) MacroDepositAll(codes ...string) error {
 	return nil
 }
 
-func (c *Character) MacroGather(code string) error {
-	if c.gatherData.Code != code {
-		tiles, err := c.FindOnMap(code)
-		if err != nil {
-			return fmt.Errorf("find on map: %w", err)
-		}
-
-		if len(tiles) == 0 {
-			return fmt.Errorf("find on map: not found")
-		}
-
-		resource, err := c.GetResource(code)
-		if err != nil {
-			return fmt.Errorf("get resource: %w", err)
-		}
-
-		switch resource.Skill {
-		case api.ResourceSchemaSkillFishing:
-			if c.InInventory("spruce_fishing_rod") > 0 {
-				// TODO make helper to choose best tool
-				if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "spruce_fishing_rod", Type: "weapon"}}); err != nil {
-					return fmt.Errorf("wear: %w", err)
-				}
-			}
-		case api.ResourceSchemaSkillMining:
-			if c.InInventory("iron_pickaxe") > 0 {
-				if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "iron_pickaxe", Type: "weapon"}}); err != nil {
-					return fmt.Errorf("wear: %w", err)
-				}
-			}
-		case api.ResourceSchemaSkillWoodcutting:
-			if c.InInventory("iron_axe") > 0 {
-				if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "iron_axe", Type: "weapon"}}); err != nil {
-					return fmt.Errorf("wear: %w", err)
-				}
-			}
-		}
-
-		c.gatherData.X = tiles[0].X
-		c.gatherData.Y = tiles[0].Y
-		c.gatherData.Code = code
-	}
-
-	err := c.Move(c.gatherData.X, c.gatherData.Y)
+func (c *Character) MacroGather(x, y int) error {
+	err := c.Move(x, y)
 	if err != nil {
 		return fmt.Errorf("move: %w", err)
 	}
@@ -117,34 +75,8 @@ func (c *Character) MacroGather(code string) error {
 	return nil
 }
 
-func (c *Character) MacroFight(monster string) error {
-	if c.fightData.Monster != monster {
-		tiles, err := c.FindOnMap(monster)
-		if err != nil {
-			return fmt.Errorf("find on map: %w", err)
-		}
-
-		if len(tiles) == 0 {
-			return fmt.Errorf("find on map: not found")
-		}
-
-		bestGear, err := getBestGearFor(c, monster)
-		if err != nil {
-			return fmt.Errorf("get best gear: %w", err)
-		}
-
-		for _, items := range bestGear {
-			if err := c.MacroWear(items); err != nil {
-				return fmt.Errorf("wear: %w", err)
-			}
-		}
-
-		c.fightData.X = tiles[0].X
-		c.fightData.Y = tiles[0].Y
-		c.fightData.Monster = monster
-	}
-
-	err := c.Move(c.fightData.X, c.fightData.Y)
+func (c *Character) MacroFight(x, y int) error {
+	err := c.Move(x, y)
 	if err != nil {
 		return fmt.Errorf("move: %w", err)
 	}
