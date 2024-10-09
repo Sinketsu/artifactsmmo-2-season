@@ -80,19 +80,20 @@ func (c *Character) MacroGather(code string) error {
 		switch resource.Skill {
 		case api.ResourceSchemaSkillFishing:
 			if c.InInventory("spruce_fishing_rod") > 0 {
-				if err := c.MacroWear("spruce_fishing_rod"); err != nil {
+				// TODO make helper to choose best tool
+				if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "spruce_fishing_rod", Type: "weapon"}}); err != nil {
 					return fmt.Errorf("wear: %w", err)
 				}
 			}
 		case api.ResourceSchemaSkillMining:
 			if c.InInventory("iron_pickaxe") > 0 {
-				if err := c.MacroWear("iron_pickaxe"); err != nil {
+				if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "iron_pickaxe", Type: "weapon"}}); err != nil {
 					return fmt.Errorf("wear: %w", err)
 				}
 			}
 		case api.ResourceSchemaSkillWoodcutting:
 			if c.InInventory("iron_axe") > 0 {
-				if err := c.MacroWear("iron_axe"); err != nil {
+				if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "iron_axe", Type: "weapon"}}); err != nil {
 					return fmt.Errorf("wear: %w", err)
 				}
 			}
@@ -101,8 +102,6 @@ func (c *Character) MacroGather(code string) error {
 		c.gatherData.X = tiles[0].X
 		c.gatherData.Y = tiles[0].Y
 		c.gatherData.Code = code
-
-		c.Log("found", code, "spot on (", c.gatherData.X, ",", c.gatherData.Y, ")")
 	}
 
 	err := c.Move(c.gatherData.X, c.gatherData.Y)
@@ -110,14 +109,9 @@ func (c *Character) MacroGather(code string) error {
 		return fmt.Errorf("move: %w", err)
 	}
 
-	result, err := c.Gather()
+	_, err = c.Gather()
 	if err != nil {
 		return fmt.Errorf("gather: %w", err)
-	}
-
-	c.Log("got", result.Xp, "XP")
-	for _, item := range result.Items {
-		c.Log("got", item.Quantity, item.Code)
 	}
 
 	return nil
@@ -140,7 +134,7 @@ func (c *Character) MacroFight(monster string) error {
 		}
 
 		for _, items := range bestGear {
-			if err := c.MacroWearMulti(items); err != nil {
+			if err := c.MacroWear(items); err != nil {
 				return fmt.Errorf("wear: %w", err)
 			}
 		}
@@ -148,8 +142,6 @@ func (c *Character) MacroFight(monster string) error {
 		c.fightData.X = tiles[0].X
 		c.fightData.Y = tiles[0].Y
 		c.fightData.Monster = monster
-
-		c.Log("found", monster, "spot on (", c.fightData.X, ",", c.fightData.Y, ")")
 	}
 
 	err := c.Move(c.fightData.X, c.fightData.Y)
@@ -157,14 +149,9 @@ func (c *Character) MacroFight(monster string) error {
 		return fmt.Errorf("move: %w", err)
 	}
 
-	result, err := c.Fight()
+	_, err = c.Fight()
 	if err != nil {
 		return fmt.Errorf("fight: %w", err)
-	}
-
-	c.Log("got", result.Xp, "XP")
-	for _, item := range result.Drops {
-		c.Log("got", item.Quantity, item.Code)
 	}
 
 	return nil
@@ -210,8 +197,6 @@ func (c *Character) MacroCraft(code string, quantity int) error {
 		c.craftData.X = tiles[0].X
 		c.craftData.Y = tiles[0].Y
 		c.craftData.Code = code
-
-		c.Log("found", code, "craft spot on (", c.fightData.X, ",", c.fightData.Y, ")")
 	}
 
 	err := c.Move(c.craftData.X, c.craftData.Y)
@@ -219,12 +204,11 @@ func (c *Character) MacroCraft(code string, quantity int) error {
 		return fmt.Errorf("move: %w", err)
 	}
 
-	result, err := c.Craft(code, quantity)
+	_, err = c.Craft(code, quantity)
 	if err != nil {
 		return fmt.Errorf("craft: %w", err)
 	}
 
-	c.Log("got", result.Xp, "XP by craft", result.Items[0].Quantity, result.Items[0].Code)
 	return nil
 }
 
@@ -249,132 +233,16 @@ func (c *Character) MacroRecycleAll(codes ...string) error {
 			return fmt.Errorf("move: %w", err)
 		}
 
-		result, err := c.Recycle(code, inInventory)
+		_, err = c.Recycle(code, inInventory)
 		if err != nil {
 			return fmt.Errorf("recycle: %w", err)
-		}
-
-		for _, item := range result.Items {
-			c.Log("got", item.Quantity, item.Code, "via recycling")
 		}
 	}
 
 	return nil
 }
 
-func (c *Character) MacroWear(code string) error {
-	item, err := c.GetItem(code)
-	if err != nil {
-		return fmt.Errorf("get item: %w", err)
-	}
-
-	switch item.Type {
-	case "weapon":
-		if c.Data().WeaponSlot == code {
-			return nil
-		}
-
-		c.Log("change weapon to", code)
-
-		if c.Data().WeaponSlot != "" {
-			if err := c.UnEquip(c.Data().WeaponSlot, item.Type, 1); err != nil {
-				return fmt.Errorf("unequip: %w", err)
-			}
-		}
-
-		return c.Equip(code, item.Type, 1)
-	case "helmet":
-		if c.Data().HelmetSlot == code {
-			return nil
-		}
-
-		c.Log("change helmet to", code)
-
-		if c.Data().HelmetSlot != "" {
-			if err := c.UnEquip(c.Data().HelmetSlot, item.Type, 1); err != nil {
-				return fmt.Errorf("unequip: %w", err)
-			}
-		}
-
-		return c.Equip(code, item.Type, 1)
-	case "body_armor":
-		if c.Data().BodyArmorSlot == code {
-			return nil
-		}
-
-		c.Log("change body_armor to", code)
-
-		if c.Data().BodyArmorSlot != "" {
-			if err := c.UnEquip(c.Data().BodyArmorSlot, item.Type, 1); err != nil {
-				return fmt.Errorf("unequip: %w", err)
-			}
-		}
-
-		return c.Equip(code, item.Type, 1)
-	case "leg_armor":
-		if c.Data().LegArmorSlot == code {
-			return nil
-		}
-
-		c.Log("change leg_armor to", code)
-
-		if c.Data().LegArmorSlot != "" {
-			if err := c.UnEquip(c.Data().LegArmorSlot, item.Type, 1); err != nil {
-				return fmt.Errorf("unequip: %w", err)
-			}
-		}
-
-		return c.Equip(code, item.Type, 1)
-	case "shield":
-		if c.Data().ShieldSlot == code {
-			return nil
-		}
-
-		c.Log("change shield to", code)
-
-		if c.Data().ShieldSlot != "" {
-			if err := c.UnEquip(c.Data().ShieldSlot, item.Type, 1); err != nil {
-				return fmt.Errorf("unequip: %w", err)
-			}
-		}
-
-		return c.Equip(code, item.Type, 1)
-	case "boots":
-		if c.Data().BootsSlot == code {
-			return nil
-		}
-
-		c.Log("change boots to", code)
-
-		if c.Data().BootsSlot != "" {
-			if err := c.UnEquip(c.Data().BootsSlot, item.Type, 1); err != nil {
-				return fmt.Errorf("unequip: %w", err)
-			}
-		}
-
-		return c.Equip(code, item.Type, 1)
-	case "amulet":
-		if c.Data().AmuletSlot == code {
-			return nil
-		}
-
-		c.Log("change amulet to", code)
-
-		if c.Data().AmuletSlot != "" {
-			if err := c.UnEquip(c.Data().AmuletSlot, item.Type, 1); err != nil {
-				return fmt.Errorf("unequip: %w", err)
-			}
-		}
-
-		return c.Equip(code, item.Type, 1)
-	case "ring":
-		return fmt.Errorf("can't wear not rings now :(")
-	default:
-		return fmt.Errorf("unknown type: %s", item.Type)
-	}
-}
-
-func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
+func (c *Character) MacroWear(items []api.SingleItemSchemaItem) error {
 	ringCount := 0
 
 	for _, item := range items {
@@ -383,8 +251,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 			if c.Data().WeaponSlot == item.Code {
 				continue
 			}
-
-			c.Log("change weapon to", item.Code)
 
 			if c.Data().WeaponSlot != "" {
 				if err := c.UnEquip(c.Data().WeaponSlot, item.Type, 1); err != nil {
@@ -400,8 +266,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 				continue
 			}
 
-			c.Log("change helmet to", item.Code)
-
 			if c.Data().HelmetSlot != "" {
 				if err := c.UnEquip(c.Data().HelmetSlot, item.Type, 1); err != nil {
 					return fmt.Errorf("unequip: %w", err)
@@ -415,8 +279,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 			if c.Data().BodyArmorSlot == item.Code {
 				continue
 			}
-
-			c.Log("change body_armor to", item.Code)
 
 			if c.Data().BodyArmorSlot != "" {
 				if err := c.UnEquip(c.Data().BodyArmorSlot, item.Type, 1); err != nil {
@@ -432,8 +294,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 				continue
 			}
 
-			c.Log("change leg_armor to", item.Code)
-
 			if c.Data().LegArmorSlot != "" {
 				if err := c.UnEquip(c.Data().LegArmorSlot, item.Type, 1); err != nil {
 					return fmt.Errorf("unequip: %w", err)
@@ -447,8 +307,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 			if c.Data().ShieldSlot == item.Code {
 				continue
 			}
-
-			c.Log("change shield to", item.Code)
 
 			if c.Data().ShieldSlot != "" {
 				if err := c.UnEquip(c.Data().ShieldSlot, item.Type, 1); err != nil {
@@ -464,8 +322,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 				continue
 			}
 
-			c.Log("change boots to", item.Code)
-
 			if c.Data().BootsSlot != "" {
 				if err := c.UnEquip(c.Data().BootsSlot, item.Type, 1); err != nil {
 					return fmt.Errorf("unequip: %w", err)
@@ -479,8 +335,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 			if c.Data().AmuletSlot == item.Code {
 				continue
 			}
-
-			c.Log("change amulet to", item.Code)
 
 			if c.Data().AmuletSlot != "" {
 				if err := c.UnEquip(c.Data().AmuletSlot, item.Type, 1); err != nil {
@@ -499,8 +353,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 					continue
 				}
 
-				c.Log("change ring1 to", item.Code)
-
 				if c.Data().Ring1Slot != "" {
 					if err := c.UnEquip(c.Data().Ring1Slot, "ring1", 1); err != nil {
 						return fmt.Errorf("unequip: %w", err)
@@ -514,8 +366,6 @@ func (c *Character) MacroWearMulti(items []api.SingleItemSchemaItem) error {
 				if c.Data().Ring2Slot == item.Code {
 					continue
 				}
-
-				c.Log("change ring2 to", item.Code)
 
 				if c.Data().Ring2Slot != "" {
 					if err := c.UnEquip(c.Data().Ring2Slot, "ring2", 1); err != nil {

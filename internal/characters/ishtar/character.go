@@ -13,15 +13,15 @@ type Character struct {
 	generic.Character
 }
 
-func NewCharacter(params generic.Params) (*Character, error) {
+func NewCharacter(params generic.Params) *Character {
 	gc, err := generic.NewCharacter(params)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	return &Character{
 		Character: *gc,
-	}, nil
+	}
 }
 
 func (c *Character) Live(ctx context.Context, events *events.Service) {
@@ -40,49 +40,18 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 }
 
 func (c *Character) do(events *events.Service) error {
-	if c.Data().FishingLevel < 20 {
-		return strategy.NewSimpleGatherStrategy().
-			Gather("shrimp_fishing_spot").
-			Bank("shrimp", "golden_shrimp").
-			Do(&c.Character)
-	}
-
-	if c.Data().MiningLevel < 30 {
-		return strategy.NewSimpleGatherStrategy().
-			Gather("coal_rocks").
-			Bank("coal", "topaz", "emerald", "ruby", "sapphire").
-			Do(&c.Character)
-	}
-
-	if c.Data().WoodcuttingLevel < 30 {
-		return strategy.NewSimpleGatherStrategy().
-			Gather("birch_tree").
-			Bank("coal", "topaz", "emerald", "ruby", "sapphire", "sap", "birch_wood").
-			Do(&c.Character)
-	}
-
-	if c.Data().FishingLevel < 30 {
-		return strategy.NewSimpleGatherStrategy().
-			Gather("trout_fishing_spot").
-			Bank("sap", "birch_wood", "trout").
-			Do(&c.Character)
-	}
-
-	if c.Data().MiningLevel < 35 {
-		return strategy.NewSimpleGatherStrategy().
-			Gather("gold_rocks").
-			Craft("gold").
-			Bank("srimp", "trout", "gold", "sapphire", "ruby", "emerald", "topaz").
-			Do(&c.Character)
-	}
-
 	if c.Data().WoodcuttingLevel < 35 {
 		return strategy.NewSimpleGatherStrategy().
+			AllowEvents(events, "Strange Apparition").
 			Gather("dead_tree").
 			Craft("dead_wood_plank").
-			Bank("srimp", "trout", "dead_wood_plank", "sap").
+			Bank("srimp", "trout", "dead_wood_plank", "sap", "diamond", "strange_ore").
 			Do(&c.Character)
 	}
 
-	return nil
+	return strategy.NewSimpleGatherStrategy().
+		AllowEvents(events, "Strange Apparition", "Magic Apparition").
+		Gather("bass_fishing_spot").
+		Bank("srimp", "bass", "trout", "dead_wood_plank", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap").
+		Do(&c.Character)
 }

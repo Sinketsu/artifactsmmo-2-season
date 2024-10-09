@@ -110,15 +110,15 @@ func (s *SimpleFightStrategy) DoTasks(c *generic.Character) error {
 		}
 	}
 
-	if c.Data().TaskProgress == c.Data().TaskTotal {
-		if err := c.MacroCompleteMonsterTask(); err != nil {
-			return fmt.Errorf("complete task: %w", err)
-		}
-	}
-
 	if c.Data().Task == "" {
 		if err := c.MacroNewMonsterTask(); err != nil {
 			return fmt.Errorf("accept new task: %w", err)
+		}
+	}
+
+	if c.Data().TaskProgress == c.Data().TaskTotal {
+		if err := c.MacroCompleteMonsterTask(); err != nil {
+			return fmt.Errorf("complete task: %w", err)
 		}
 	}
 

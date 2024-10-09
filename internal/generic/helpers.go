@@ -2,6 +2,7 @@ package generic
 
 import (
 	"fmt"
+	"strings"
 
 	api "github.com/Sinketsu/artifactsmmo/gen/oas"
 	combinations "github.com/mxschmitt/golang-combinations"
@@ -161,7 +162,13 @@ func getBestGearFor(c ICharacter, monsterCode string) ([][]api.SingleItemSchemaI
 		}
 	}
 
-	c.Log("found best gear with effective dmg:", bestScore)
+	bestGearCodes := make([]string, len(bestGear))
+	for _, gears := range bestGear {
+		for _, gear := range gears {
+			bestGearCodes = append(bestGearCodes, gear.Code)
+		}
+	}
+	c.Log("found best gear with effective dmg:", bestScore, "[", strings.Join(bestGearCodes, ", "), "]")
 
 	return bestGear, nil
 }

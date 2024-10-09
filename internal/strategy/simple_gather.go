@@ -3,6 +3,7 @@ package strategy
 import (
 	"fmt"
 
+	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
@@ -11,6 +12,9 @@ type SimpleGatherStrategy struct {
 	sell   []string
 	bank   []string
 	craft  string
+
+	events        *events.Service
+	allowedEvents []string
 }
 
 func NewSimpleGatherStrategy() *SimpleGatherStrategy {
@@ -34,6 +38,12 @@ func (s *SimpleGatherStrategy) Bank(items ...string) *SimpleGatherStrategy {
 
 func (s *SimpleGatherStrategy) Craft(item string) *SimpleGatherStrategy {
 	s.craft = item
+	return s
+}
+
+func (s *SimpleGatherStrategy) AllowEvents(events *events.Service, names ...string) *SimpleGatherStrategy {
+	s.allowedEvents = names
+	s.events = events
 	return s
 }
 
@@ -73,5 +83,17 @@ func (s *SimpleGatherStrategy) Do(c *generic.Character) error {
 		return nil
 	}
 
+	if s.events != nil {
+		for _, eventName := range s.allowedEvents {
+			if event := s.events.Get(eventName); event != nil {
+				return c.MacroGather(event.Map.Content.MapContentSchema.Code)
+			}
+		}
+	}
+
 	return c.MacroGather(s.gather)
+}
+
+func (s *SimpleGatherStrategy) DoTasks(c *generic.Character) error {
+	return fmt.Errorf("not supported yet")
 }

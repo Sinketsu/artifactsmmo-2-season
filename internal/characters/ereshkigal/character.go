@@ -13,15 +13,15 @@ type Character struct {
 	generic.Character
 }
 
-func NewCharacter(params generic.Params) (*Character, error) {
+func NewCharacter(params generic.Params) *Character {
 	gc, err := generic.NewCharacter(params)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	return &Character{
 		Character: *gc,
-	}, nil
+	}
 }
 
 func (c *Character) Live(ctx context.Context, events *events.Service) {

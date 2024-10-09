@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -17,9 +18,12 @@ import (
 	"github.com/Sinketsu/artifactsmmo/internal/monitoring"
 )
 
+type Character interface {
+	Live(ctx context.Context, events *events.Service)
+}
+
 func main() {
-	cli := monitoring.NewClient(os.Getenv("MONITORING_WRITE_URL"), os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN"))
-	go cli.Run(30 * time.Second)
+	go monitoring.NewClient(os.Getenv("MONITORING_WRITE_URL"), os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN")).Run(30 * time.Second)
 
 	serverParams := generic.ServerParams{
 		ServerUrl:   os.Getenv("SERVER_URL"),
@@ -29,47 +33,39 @@ func main() {
 	events := events.New(serverParams)
 	go events.Update(1 * time.Minute)
 
-	Ishtar, err := ishtar.NewCharacter(generic.Params{
-		CharacterName: "Ishtar",
-		ServerParams:  serverParams,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	Cetcalcoatl, err := cetcalcoatl.NewCharacter(generic.Params{
-		CharacterName: "Cetcalcoatl",
-		ServerParams:  serverParams,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	Ereshkigal, err := ereshkigal.NewCharacter(generic.Params{
-		CharacterName: "Ereshkigal",
-		ServerParams:  serverParams,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	Enkidu, err := enkidu.NewCharacter(generic.Params{
-		CharacterName: "Enkidu",
-		ServerParams:  serverParams,
-	})
-	if err != nil {
-		panic(err)
+	characters := []Character{
+		ishtar.NewCharacter(generic.Params{
+			CharacterName: "Ishtar",
+			ServerParams:  serverParams,
+		}),
+		cetcalcoatl.NewCharacter(generic.Params{
+			CharacterName: "Cetcalcoatl",
+			ServerParams:  serverParams,
+		}),
+		ereshkigal.NewCharacter(generic.Params{
+			CharacterName: "Ereshkigal",
+			ServerParams:  serverParams,
+		}),
+		enkidu.NewCharacter(generic.Params{
+			CharacterName: "Enkidu",
+			ServerParams:  serverParams,
+		}),
 	}
 
 	ctx, stopNotify := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	go Ishtar.Live(ctx, events)
-	go Ereshkigal.Live(ctx, events)
-	go Enkidu.Live(ctx, events)
-	go Cetcalcoatl.Live(ctx, events)
+	wg := &sync.WaitGroup{}
+	wg.Add(len(characters))
+	for _, character := range characters {
+		go func() {
+			character.Live(ctx, events)
+			wg.Done()
+		}()
+	}
 
 	<-ctx.Done()
 	fmt.Println("got stop signal...")
 
 	stopNotify()
+	wg.Wait()
 }
