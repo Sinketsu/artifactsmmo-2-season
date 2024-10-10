@@ -67,10 +67,10 @@ func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	return s.crafttHelper(c)
+	return s.craftHelper(c)
 }
 
-func (s *SimpleCraftStrategy) crafttHelper(c *generic.Character) error {
+func (s *SimpleCraftStrategy) craftHelper(c *generic.Character) error {
 	item, err := c.GetItem(s.craft, true)
 	if err != nil {
 		return fmt.Errorf("get item: %w", err)

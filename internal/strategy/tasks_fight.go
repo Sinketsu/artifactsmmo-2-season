@@ -50,7 +50,8 @@ func (s *tasksFightStrategy) AllowEvents(events *events.Service, names ...string
 }
 
 func (s *tasksFightStrategy) Do(c *generic.Character) error {
-	if c.InventoryItemCount() == c.Data().InventoryMaxItems || c.EmptyInventorySlots() == 0 {
+	// we need some space for complete task
+	if c.Data().InventoryMaxItems-c.InventoryItemCount() < 10 || c.EmptyInventorySlots() == 0 {
 		c.Log("inventory is full - going to bank, GE...")
 
 		if len(s.bank) > 0 {
@@ -109,10 +110,8 @@ func (s *tasksFightStrategy) fightHelper(c *generic.Character, code string, cach
 			return fmt.Errorf("get best gear: %w", err)
 		}
 
-		for _, items := range bestGear {
-			if err := c.MacroWear(items); err != nil {
-				return fmt.Errorf("wear: %w", err)
-			}
+		if err := c.MacroWear(bestGear); err != nil {
+			return fmt.Errorf("wear: %w", err)
 		}
 
 		s.currentMonster = code

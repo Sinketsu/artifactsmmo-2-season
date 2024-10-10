@@ -9,7 +9,37 @@ import (
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
-func (c *Character) GetBestGearFor(monsterCode string) ([][]api.SingleItemSchemaItem, error) {
+func gearCombinations(idx int, all ...[][]api.SingleItemSchemaItem) [][]api.SingleItemSchemaItem {
+	result := make([][]api.SingleItemSchemaItem, 0)
+
+	if idx == len(all)-1 {
+		return all[idx]
+	}
+
+	if len(all[idx]) == 0 {
+		return gearCombinations(idx+1, all...)
+	}
+
+	for _, slotCombinations := range all[idx] {
+		remainingSet := gearCombinations(idx+1, all...)
+		if len(remainingSet) == 0 {
+			result = append(result, slotCombinations)
+			continue
+		}
+
+		for _, other := range remainingSet {
+			newSet := []api.SingleItemSchemaItem{}
+			newSet = append(newSet, slotCombinations...)
+			newSet = append(newSet, other...)
+
+			result = append(result, newSet)
+		}
+	}
+
+	return result
+}
+
+func (c *Character) GetBestGearFor(monsterCode string) ([]api.SingleItemSchemaItem, error) {
 	monster, err := c.GetMonster(monsterCode, true)
 	if err != nil {
 		return nil, fmt.Errorf("get monster: %w", err)
@@ -120,47 +150,33 @@ func (c *Character) GetBestGearFor(monsterCode string) ([][]api.SingleItemSchema
 	helmetCombinations := combinations.Combinations(helmets, 1)
 
 	bestScore := 0.0
-	bestGear := [][]api.SingleItemSchemaItem{}
-	for _, weapon := range weaponCombinations {
-		for _, bodyArmor := range bodyArmorCombinations {
-			for _, legsArmor := range legsArmorCombinations {
-				for _, shield := range shieldCombinations {
-					for _, amulet := range amuletCombinations {
-						for _, boots := range bootsCombinations {
-							for _, rings := range ringsCombinations {
-								for _, helmet := range helmetCombinations {
-									totalEffects := make(map[string]int)
+	bestGear := []api.SingleItemSchemaItem{}
 
-									for _, items := range [][]api.SingleItemSchemaItem{weapon, bodyArmor, legsArmor, shield, amulet, boots, rings, helmet} {
-										for _, item := range items {
-											for _, e := range item.Effects {
-												totalEffects[e.Name] += e.Value
-											}
-										}
-									}
+	setCombinations := gearCombinations(0, weaponCombinations, bodyArmorCombinations, legsArmorCombinations,
+		shieldCombinations, amuletCombinations, bootsCombinations, ringsCombinations, helmetCombinations)
 
-									score := float64(totalEffects["attack_earth"])*(1-float64(monster.ResEarth)/100)*(1+float64(totalEffects["dmg_earth"])/100) +
-										float64(totalEffects["attack_water"])*(1-float64(monster.ResWater)/100)*(1+float64(totalEffects["dmg_water"])/100) +
-										float64(totalEffects["attack_fire"])*(1-float64(monster.ResFire)/100)*(1+float64(totalEffects["dmg_fire"])/100) +
-										float64(totalEffects["attack_air"])*(1-float64(monster.ResAir)/100)*(1+float64(totalEffects["dmg_air"])/100)
-									if score > bestScore {
-										bestScore = score
-										bestGear = [][]api.SingleItemSchemaItem{weapon, bodyArmor, legsArmor, shield, amulet, boots, rings, helmet}
-									}
-								}
-							}
-						}
-					}
-				}
+	for _, combination := range setCombinations {
+		totalEffects := make(map[string]int)
+
+		for _, item := range combination {
+			for _, e := range item.Effects {
+				totalEffects[e.Name] += e.Value
 			}
+		}
+
+		score := float64(totalEffects["attack_earth"])*(1-float64(monster.ResEarth)/100)*(1+float64(totalEffects["dmg_earth"])/100) +
+			float64(totalEffects["attack_water"])*(1-float64(monster.ResWater)/100)*(1+float64(totalEffects["dmg_water"])/100) +
+			float64(totalEffects["attack_fire"])*(1-float64(monster.ResFire)/100)*(1+float64(totalEffects["dmg_fire"])/100) +
+			float64(totalEffects["attack_air"])*(1-float64(monster.ResAir)/100)*(1+float64(totalEffects["dmg_air"])/100)
+		if score > bestScore {
+			bestScore = score
+			bestGear = combination
 		}
 	}
 
 	bestGearCodes := make([]string, 0, len(bestGear))
-	for _, gears := range bestGear {
-		for _, gear := range gears {
-			bestGearCodes = append(bestGearCodes, gear.Code)
-		}
+	for _, gear := range bestGear {
+		bestGearCodes = append(bestGearCodes, gear.Code)
 	}
 	c.Log("found best gear for monster", monster.Code, "with effective dmg:", bestScore, "[", strings.Join(bestGearCodes, ", "), "]")
 

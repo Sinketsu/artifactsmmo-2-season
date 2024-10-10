@@ -3,6 +3,7 @@ package generic
 import (
 	"context"
 	"fmt"
+	"time"
 	"unsafe"
 
 	api "github.com/Sinketsu/artifactsmmo/gen/oas"
@@ -79,7 +80,7 @@ func (c *Character) initData() error {
 }
 
 func (c *Character) Log(msg ...any) {
-	fmt.Print(c.name + ": ")
+	fmt.Print("["+time.Now().Local().Format(time.TimeOnly)+"] ", c.name+": ")
 	fmt.Println(msg...)
 }
 
@@ -89,6 +90,15 @@ func (c *Character) updateData(p unsafe.Pointer) error {
 
 	goldCount.Set(float64(c.data.Gold), c.name)
 	tasksCoinCount.Set(float64(c.InInventory("tasks_coin")), c.name)
+
+	skillLevel.Set(float64(c.data.GearcraftingLevel), c.name, "gearcrafting")
+	skillLevel.Set(float64(c.data.WeaponcraftingLevel), c.name, "weaponcrafting")
+	skillLevel.Set(float64(c.data.JewelrycraftingLevel), c.name, "jewerlycrafting")
+	skillLevel.Set(float64(c.data.CookingLevel), c.name, "cooking")
+	skillLevel.Set(float64(c.data.MiningLevel), c.name, "mining")
+	skillLevel.Set(float64(c.data.WoodcuttingLevel), c.name, "woodcutting")
+	skillLevel.Set(float64(c.data.FishingLevel), c.name, "fishing")
+
 	return nil
 }
 

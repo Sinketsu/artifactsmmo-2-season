@@ -43,41 +43,23 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 }
 
 func (c *Character) do(events *events.Service) error {
-	switch {
-	case c.Data().MiningLevel < 35:
-		c.setStrategy(
-			"mine gold and craft gold bars",
-			strategy.NewSimpleGatherStrategy().
-				Gather("gold_rocks").
-				Craft("gold").
-				Bank("gold", "sapphire", "ruby", "emerald", "topaz"),
-		)
-	case c.Data().WoodcuttingLevel < 35:
-		c.setStrategy(
-			"gather dead wood and craft dead wood planks (allow some events)",
-			strategy.NewSimpleGatherStrategy().
-				AllowEvents(events, "Strange Apparition").
-				Gather("dead_tree").
-				Craft("dead_wood_plank").
-				Sell("shrimp", "iron_ore", "spruce_wood", "yellow_slimeball", "red_slimeball", "gold_ore").
-				Bank("dead_wood_plank", "sap", "diamond", "strange_ore"),
-		)
-	case c.Data().FishingLevel < 40:
-		c.setStrategy(
-			"fishing bass and sell it (allow all events)",
-			strategy.NewSimpleGatherStrategy().
-				AllowEvents(events, "Strange Apparition", "Magic Apparition").
-				Gather("bass_fishing_spot").
-				Craft("dead_wood_plank").
-				Sell("bass").
-				Bank("dead_wood_plank", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap"),
-		)
-	default:
-		c.setStrategy(
-			"nothing to do",
-			strategy.EmptyStrategy(),
-		)
-	}
+	// c.setStrategy(
+	// 	"fishing bass and sell it (allow all events)",
+	// 	strategy.NewSimpleGatherStrategy().
+	// 		AllowEvents(events, "Strange Apparition", "Magic Apparition").
+	// 		Gather("bass_fishing_spot").
+	// 		Craft("dead_wood_plank").
+	// 		Sell("bass").
+	// 		Bank("dead_wood_plank", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap"),
+	// )
+
+	c.setStrategy(
+		"gather feather",
+		strategy.NewSimpleFightStrategy().
+			Fight("chicken").
+			Sell("bass", "raw_chicken", "egg", "").
+			Bank("feather", "golden_egg", "diamond", "strange_ore", "magic_wood", "magic_sap"),
+	)
 
 	return c.strategy.Do(&c.Character)
 }

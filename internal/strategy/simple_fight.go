@@ -92,10 +92,8 @@ func (s *SimpleFightStrategy) fightHelper(c *generic.Character, code string, cac
 			return fmt.Errorf("get best gear: %w", err)
 		}
 
-		for _, items := range bestGear {
-			if err := c.MacroWear(items); err != nil {
-				return fmt.Errorf("wear: %w", err)
-			}
+		if err := c.MacroWear(bestGear); err != nil {
+			return fmt.Errorf("wear: %w", err)
 		}
 
 		s.currentMonster = code
