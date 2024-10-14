@@ -26922,6 +26922,8 @@ type TaskFullSchema struct {
 	MaxQuantity int `json:"max_quantity"`
 	// Skill required to complete the task.
 	Skill TaskFullSchemaSkill `json:"skill"`
+	// Rewards.
+	Rewards TaskFullSchemaRewards `json:"rewards"`
 }
 
 // GetCode returns the value of Code.
@@ -26954,6 +26956,11 @@ func (s *TaskFullSchema) GetSkill() TaskFullSchemaSkill {
 	return s.Skill
 }
 
+// GetRewards returns the value of Rewards.
+func (s *TaskFullSchema) GetRewards() TaskFullSchemaRewards {
+	return s.Rewards
+}
+
 // SetCode sets the value of Code.
 func (s *TaskFullSchema) SetCode(val string) {
 	s.Code = val
@@ -26982,6 +26989,26 @@ func (s *TaskFullSchema) SetMaxQuantity(val int) {
 // SetSkill sets the value of Skill.
 func (s *TaskFullSchema) SetSkill(val TaskFullSchemaSkill) {
 	s.Skill = val
+}
+
+// SetRewards sets the value of Rewards.
+func (s *TaskFullSchema) SetRewards(val TaskFullSchemaRewards) {
+	s.Rewards = val
+}
+
+type TaskFullSchemaRewards struct {
+	// Items rewards.
+	Items []SimpleItemSchema `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TaskFullSchemaRewards) GetItems() []SimpleItemSchema {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TaskFullSchemaRewards) SetItems(val []SimpleItemSchema) {
+	s.Items = val
 }
 
 // Skill required to complete the task.

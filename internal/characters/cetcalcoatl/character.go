@@ -54,11 +54,11 @@ func (c *Character) do(events *events.Service) error {
 	// )
 
 	c.setStrategy(
-		"gather feather",
-		strategy.NewSimpleFightStrategy().
-			Fight("chicken").
-			Sell("bass", "raw_chicken", "egg", "").
-			Bank("feather", "golden_egg", "diamond", "strange_ore", "magic_wood", "magic_sap"),
+		"gather ash wood",
+		strategy.NewSimpleGatherStrategy().
+			AllowEvents(events, "Strange Apparition", "Magic Apparition").
+			Gather("ash_tree").
+			Bank("ash_wood", "ruby", "sapphire", "diamond", "strange_ore", "magic_wood", "magic_sap", "feather", "sap"),
 	)
 
 	return c.strategy.Do(&c.Character)

@@ -54,13 +54,11 @@ func (c *Character) do(events *events.Service) error {
 	// )
 
 	c.setStrategy(
-		"gather iron",
+		"gather iron ores",
 		strategy.NewSimpleGatherStrategy().
 			AllowEvents(events, "Strange Apparition", "Magic Apparition").
 			Gather("iron_rocks").
-			Craft("iron").
-			Sell("bass").
-			Bank("ruby", "sapphire", "diamond", "strange_ore", "magic_wood", "magic_sap"),
+			Bank("iron_ore", "ruby", "sapphire", "diamond", "strange_ore", "magic_wood", "magic_sap"),
 	)
 
 	return c.strategy.Do(&c.Character)
