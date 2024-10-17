@@ -43,8 +43,31 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 }
 
 func (c *Character) do() error {
+	switch {
+	case c.Data().WeaponcraftingLevel < 30:
+		c.setStrategy(
+			"craft skull_staff for up skill",
+			strategy.NewSimpleCraftStrategy().
+				Craft("skull_staff").
+				Recycle("skull_staff"),
+		)
+	case c.Data().GearcraftingLevel < 30:
+		c.setStrategy(
+			"craft skeleton_helmet for up skill",
+			strategy.NewSimpleCraftStrategy().
+				Craft("skeleton_helmet").
+				Recycle("skeleton_helmet", "skull_staff"),
+		)
+	case c.Data().JewelrycraftingLevel < 30:
+		c.setStrategy(
+			"craft dreadful_amulet for up skill",
+			strategy.NewSimpleCraftStrategy().
+				Craft("dreadful_amulet").
+				Recycle("dreadful_amulet", "skeleton_helmet"),
+		)
+	}
 
-	c.setStrategy("waiting for resources...", strategy.EmptyStrategy())
+	// c.setStrategy("waiting for resources...", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
 }

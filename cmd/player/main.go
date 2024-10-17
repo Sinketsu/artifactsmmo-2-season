@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
@@ -15,7 +16,7 @@ import (
 	"github.com/Sinketsu/artifactsmmo/internal/characters/ishtar"
 	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
-	"github.com/Sinketsu/artifactsmmo/internal/monitoring"
+	ycmonitoringgo "github.com/Sinketsu/yc-monitoring-go"
 )
 
 type Character interface {
@@ -23,7 +24,8 @@ type Character interface {
 }
 
 func main() {
-	go monitoring.NewClient(os.Getenv("MONITORING_WRITE_URL"), os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN")).Run(30 * time.Second)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
+	monitoringClient := ycmonitoringgo.NewClient(os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN"), ycmonitoringgo.WithLogger(logger))
 
 	serverParams := generic.ServerParams{
 		ServerUrl:   os.Getenv("SERVER_URL"),
@@ -53,6 +55,8 @@ func main() {
 	}
 
 	ctx, stopNotify := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	go monitoringClient.Run(ctx, ycmonitoringgo.DefaultRegistry, 30*time.Second)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(characters))

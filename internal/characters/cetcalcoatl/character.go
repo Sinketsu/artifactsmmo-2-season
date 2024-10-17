@@ -43,23 +43,26 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 }
 
 func (c *Character) do(events *events.Service) error {
-	// c.setStrategy(
-	// 	"fishing bass and sell it (allow all events)",
-	// 	strategy.NewSimpleGatherStrategy().
-	// 		AllowEvents(events, "Strange Apparition", "Magic Apparition").
-	// 		Gather("bass_fishing_spot").
-	// 		Craft("dead_wood_plank").
-	// 		Sell("bass").
-	// 		Bank("dead_wood_plank", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap"),
-	// )
-
 	c.setStrategy(
-		"gather ash wood",
+		"fishing bass and sell it (allow all events)",
 		strategy.NewSimpleGatherStrategy().
 			AllowEvents(events, "Strange Apparition", "Magic Apparition").
-			Gather("ash_tree").
-			Bank("ash_wood", "ruby", "sapphire", "diamond", "strange_ore", "magic_wood", "magic_sap", "feather", "sap"),
+			Gather("bass_fishing_spot").
+			Craft("dead_wood_plank").
+			Sell("bass").
+			Bank("dead_wood_plank", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap"),
 	)
+
+	// c.setStrategy(
+	// 	"gather ash wood",
+	// 	strategy.NewSimpleGatherStrategy().
+	// 		AllowEvents(events, "Strange Apparition", "Magic Apparition").
+	// 		Gather("ash_tree").
+	// 		Bank("ash_wood", "ruby", "sapphire", "diamond", "strange_ore", "magic_wood", "magic_sap", "feather", "sap"),
+	// )
+
+	// c.setStrategy("craft hardwood_plank", strategy.NewSimpleCraftStrategy().Craft("hardwood_plank").Bank("hardwood_plank"))
+	// c.setStrategy("player control", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
 }

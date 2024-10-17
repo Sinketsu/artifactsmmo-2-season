@@ -48,20 +48,20 @@ func (c *Character) do(events *events.Service) error {
 	// 	strategy.NewTasksFightStrategy().
 	// 		Bank("owlbear_hair", "golden_egg", "red_cloth", "skeleton_bone", "skeleton_skull",
 	// 			"vampire_blood", "flying_wing", "serpent_skin", "ogre_eye", "ogre_skin",
-	// 			"bandit_armor", "demon_horn", "piece_of_obsidian").
+	// 			"bandit_armor", "demon_horn", "piece_of_obsidian", "magic_stone", "cursed_book",
+	// 			"demoniac_dust", "piece_of_obsidian").
 	// 		Sell("mushroom", "red_slimeball", "yellow_slimeball", "blue_slimeball", "green_slimeball",
 	// 			"raw_beef", "milk_bucket", "cowhide", "raw_wolf_meat", "wolf_bone", "wolf_hair",
 	// 			"raw_chicken", "egg", "feather", "pig_skin", "lizard_skin").
-	// 		CancelTasks("lich", "cultist_acolyte", "imp", "bat").
+	// 		CancelTasks("lich", "bat").
 	// 		AllowEvents(events, "Bandit Camp", "Portal"),
 	// )
 
 	c.setStrategy(
-		"fight scarecrow for artifact",
+		"fight skeleton for resources",
 		strategy.NewSimpleFightStrategy().
-			Fight("scarecrow").
-			Sell("pumpkin").
-			Bank("voodo_doll"),
+			Fight("skeleton").
+			Bank("skeleton_bone", "skeleton_skull"),
 	)
 
 	// c.setStrategy("spend task coins", strategy.EmptyStrategy())

@@ -1,10 +1,10 @@
 package generic
 
-import "github.com/Sinketsu/artifactsmmo/internal/monitoring"
+import ycmonitoringgo "github.com/Sinketsu/yc-monitoring-go"
 
 var (
-	goldCount      = monitoring.NewDGauge("gold_count", "character")
-	tasksCoinCount = monitoring.NewDGauge("tasks_coin_count", "character")
-	requestCount   = monitoring.NewCounter("request_count")
-	skillLevel     = monitoring.NewDGauge("skill_level", "character", "skill")
+	goldCount      = ycmonitoringgo.NewDGauge("gold_count", ycmonitoringgo.DefaultRegistry, "character")
+	tasksCoinCount = ycmonitoringgo.NewDGauge("tasks_coin_count", ycmonitoringgo.DefaultRegistry, "character")
+	requestCount   = ycmonitoringgo.NewCounter("request_count", ycmonitoringgo.DefaultRegistry)
+	skillLevel     = ycmonitoringgo.NewDGauge("skill_level", ycmonitoringgo.DefaultRegistry, "character", "skill")
 )
