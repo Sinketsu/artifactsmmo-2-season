@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
@@ -12,7 +11,6 @@ type tasksFightStrategy struct {
 	sell          []string
 	bank          []string
 	cancelTasks   []string
-	events        *events.Service
 	allowedEvents []string
 
 	// cache state for current mosnter
@@ -43,9 +41,8 @@ func (s *tasksFightStrategy) CancelTasks(monsters ...string) *tasksFightStrategy
 }
 
 // AllowEvents sets list of allowed events. When event will be active - fight against event monsters, else fight against usual monster, setted in Fight
-func (s *tasksFightStrategy) AllowEvents(events *events.Service, names ...string) *tasksFightStrategy {
+func (s *tasksFightStrategy) AllowEvents(names ...string) *tasksFightStrategy {
 	s.allowedEvents = names
-	s.events = events
 	return s
 }
 
@@ -67,11 +64,9 @@ func (s *tasksFightStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	if s.events != nil {
-		for _, eventName := range s.allowedEvents {
-			if event := s.events.Get(eventName); event != nil {
-				return s.fightHelper(c, event.Map.Content.MapContentSchema.Code, false)
-			}
+	for _, eventName := range s.allowedEvents {
+		if event := c.Events().Get(eventName); event != nil {
+			return s.fightHelper(c, event.Map.Content.MapContentSchema.Code, false)
 		}
 	}
 
@@ -105,15 +100,20 @@ func (s *tasksFightStrategy) fightHelper(c *generic.Character, code string, cach
 	}
 
 	if s.currentMonster != code {
+		c.Bank().Lock()
+
 		bestGear, err := c.GetBestGearFor(code)
 		if err != nil {
+			c.Bank().Unlock()
 			return fmt.Errorf("get best gear: %w", err)
 		}
 
 		if err := c.MacroWear(bestGear); err != nil {
+			c.Bank().Unlock()
 			return fmt.Errorf("wear: %w", err)
 		}
 
+		c.Bank().Unlock()
 		s.currentMonster = code
 	}
 

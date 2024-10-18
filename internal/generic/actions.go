@@ -6,36 +6,36 @@ import (
 	"time"
 	"unsafe"
 
-	api "github.com/Sinketsu/artifactsmmo/gen/oas"
+	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 )
 
-func (c *Character) Gather() (api.SkillDataSchemaDetails, error) {
+func (c *Character) Gather() (oas.SkillDataSchemaDetails, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionGatheringMyNameActionGatheringPost(context.Background(), api.ActionGatheringMyNameActionGatheringPostParams{Name: c.name})
+	res, err := c.cli.ActionGatheringMyNameActionGatheringPost(context.Background(), oas.ActionGatheringMyNameActionGatheringPostParams{Name: c.name})
 	if err != nil {
-		return api.SkillDataSchemaDetails{}, err
+		return oas.SkillDataSchemaDetails{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.SkillResponseSchema:
+	case *oas.SkillResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return v.Data.Details, c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionGatheringMyNameActionGatheringPostCode486:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("already gathering...")
-	case *api.ActionGatheringMyNameActionGatheringPostCode493:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("character skill level is too low")
-	case *api.ActionGatheringMyNameActionGatheringPostCode497:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("inventory is full")
-	case *api.ActionGatheringMyNameActionGatheringPostCode498:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("character not found")
-	case *api.ActionGatheringMyNameActionGatheringPostCode499:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("cooldown")
-	case *api.ActionGatheringMyNameActionGatheringPostCode598:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("not on required map tile")
+	case *oas.ActionGatheringMyNameActionGatheringPostCode486:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("already gathering...")
+	case *oas.ActionGatheringMyNameActionGatheringPostCode493:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("character skill level is too low")
+	case *oas.ActionGatheringMyNameActionGatheringPostCode497:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("inventory is full")
+	case *oas.ActionGatheringMyNameActionGatheringPostCode498:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("character not found")
+	case *oas.ActionGatheringMyNameActionGatheringPostCode499:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("cooldown")
+	case *oas.ActionGatheringMyNameActionGatheringPostCode598:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("not on required map tile")
 	default:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("unknown answer type")
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("unknown answer type")
 	}
 }
 
@@ -46,26 +46,26 @@ func (c *Character) Move(x, y int) error {
 
 	requestCount.Inc()
 
-	res, err := c.cli.ActionMoveMyNameActionMovePost(context.Background(), &api.DestinationSchema{X: x, Y: y}, api.ActionMoveMyNameActionMovePostParams{Name: c.name})
+	res, err := c.cli.ActionMoveMyNameActionMovePost(context.Background(), &oas.DestinationSchema{X: x, Y: y}, oas.ActionMoveMyNameActionMovePostParams{Name: c.name})
 	if err != nil {
 		return err
 	}
 
 	switch v := res.(type) {
-	case *api.CharacterMovementResponseSchema:
+	case *oas.CharacterMovementResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionMoveMyNameActionMovePostNotFound:
+	case *oas.ActionMoveMyNameActionMovePostNotFound:
 		return fmt.Errorf("map not found")
-	case *api.ActionMoveMyNameActionMovePostCode486:
+	case *oas.ActionMoveMyNameActionMovePostCode486:
 		return fmt.Errorf("already moving...")
-	case *api.ActionMoveMyNameActionMovePostCode490:
+	case *oas.ActionMoveMyNameActionMovePostCode490:
 		// character already at point
 		return nil
-	case *api.ActionMoveMyNameActionMovePostCode498:
+	case *oas.ActionMoveMyNameActionMovePostCode498:
 		return fmt.Errorf("character not found")
-	case *api.ActionMoveMyNameActionMovePostCode499:
+	case *oas.ActionMoveMyNameActionMovePostCode499:
 		return fmt.Errorf("cooldown")
 	default:
 		return fmt.Errorf("unknown answer type")
@@ -75,58 +75,58 @@ func (c *Character) Move(x, y int) error {
 func (c *Character) Sell(code string, quantity int, price int) (int, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionGeSellItemMyNameActionGeSellPost(context.Background(), &api.GETransactionItemSchema{Code: code, Quantity: quantity, Price: price}, api.ActionGeSellItemMyNameActionGeSellPostParams{Name: c.name})
+	res, err := c.cli.ActionGeSellItemMyNameActionGeSellPost(context.Background(), &oas.GETransactionItemSchema{Code: code, Quantity: quantity, Price: price}, oas.ActionGeSellItemMyNameActionGeSellPostParams{Name: c.name})
 	if err != nil {
 		return 0, err
 	}
 
 	switch v := res.(type) {
-	case *api.GETransactionResponseSchema:
+	case *oas.GETransactionResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return v.Data.Transaction.TotalPrice, c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionGeSellItemMyNameActionGeSellPostNotFound:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostNotFound:
 		return 0, fmt.Errorf("item not found")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode478:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode478:
 		return 0, fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode479:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode479:
 		return 0, fmt.Errorf("too many items to sell - bigger than limit")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode482:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode482:
 		return 0, fmt.Errorf("no item at this price")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode483:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode483:
 		return 0, fmt.Errorf("transaction is already in progress on this item by a another character")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode486:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode486:
 		return 0, fmt.Errorf("action is already in progress by your character")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode498:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode498:
 		return 0, fmt.Errorf("character not found")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode499:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode499:
 		return 0, fmt.Errorf("cooldown")
-	case *api.ActionGeSellItemMyNameActionGeSellPostCode598:
+	case *oas.ActionGeSellItemMyNameActionGeSellPostCode598:
 		return 0, fmt.Errorf("GE not at this map tile")
 	default:
 		return 0, fmt.Errorf("unknown answer type")
 	}
 }
 
-func (c *Character) GetGEItem(code string) (api.GEItemSchema, error) {
+func (c *Character) GetGEItem(code string) (oas.GEItemSchema, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.GetGeItemGeCodeGet(context.Background(), api.GetGeItemGeCodeGetParams{Code: code})
+	res, err := c.cli.GetGeItemGeCodeGet(context.Background(), oas.GetGeItemGeCodeGetParams{Code: code})
 	if err != nil {
-		return api.GEItemSchema{}, err
+		return oas.GEItemSchema{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.GEItemResponseSchema:
+	case *oas.GEItemResponseSchema:
 		return v.Data, nil
-	case *api.GetGeItemGeCodeGetNotFound:
-		return api.GEItemSchema{}, fmt.Errorf("item not found")
+	case *oas.GetGeItemGeCodeGetNotFound:
+		return oas.GEItemSchema{}, fmt.Errorf("item not found")
 	default:
-		return api.GEItemSchema{}, fmt.Errorf("unknown answer type")
+		return oas.GEItemSchema{}, fmt.Errorf("unknown answer type")
 	}
 }
 
-func (c *Character) GetItem(code string, cachable bool) (api.SingleItemSchemaItem, error) {
+func (c *Character) GetItem(code string, cachable bool) (oas.SingleItemSchemaItem, error) {
 	if cachable {
 		if item, ok := c.itemsCache[code]; ok {
 			return item, nil
@@ -135,119 +135,119 @@ func (c *Character) GetItem(code string, cachable bool) (api.SingleItemSchemaIte
 
 	requestCount.Inc()
 
-	res, err := c.cli.GetItemItemsCodeGet(context.Background(), api.GetItemItemsCodeGetParams{Code: code})
+	res, err := c.cli.GetItemItemsCodeGet(context.Background(), oas.GetItemItemsCodeGetParams{Code: code})
 	if err != nil {
-		return api.SingleItemSchemaItem{}, err
+		return oas.SingleItemSchemaItem{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.ItemResponseSchema:
+	case *oas.ItemResponseSchema:
 		if cachable {
 			c.itemsCache[code] = v.Data.Item
 		}
 
 		return v.Data.Item, nil
-	case *api.GetItemItemsCodeGetNotFound:
-		return api.SingleItemSchemaItem{}, fmt.Errorf("item not found")
+	case *oas.GetItemItemsCodeGetNotFound:
+		return oas.SingleItemSchemaItem{}, fmt.Errorf("item not found")
 	default:
-		return api.SingleItemSchemaItem{}, fmt.Errorf("unknown answer type")
+		return oas.SingleItemSchemaItem{}, fmt.Errorf("unknown answer type")
 	}
 }
 
-func (c *Character) Fight() (api.CharacterFightDataSchemaFight, error) {
+func (c *Character) Fight() (oas.CharacterFightDataSchemaFight, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionFightMyNameActionFightPost(context.Background(), api.ActionFightMyNameActionFightPostParams{Name: c.name})
+	res, err := c.cli.ActionFightMyNameActionFightPost(context.Background(), oas.ActionFightMyNameActionFightPostParams{Name: c.name})
 	if err != nil {
-		return api.CharacterFightDataSchemaFight{}, err
+		return oas.CharacterFightDataSchemaFight{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.CharacterFightResponseSchema:
+	case *oas.CharacterFightResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
-		if v.Data.Fight.Result == api.CharacterFightDataSchemaFightResultLose {
-			return api.CharacterFightDataSchemaFight{}, fmt.Errorf("loose battle")
+		if v.Data.Fight.Result == oas.CharacterFightDataSchemaFightResultLose {
+			return oas.CharacterFightDataSchemaFight{}, fmt.Errorf("loose battle")
 		}
 
 		return v.Data.Fight, c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionFightMyNameActionFightPostCode486:
-		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("action is already in progress by your character")
-	case *api.ActionFightMyNameActionFightPostCode497:
-		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("inventory is full")
-	case *api.ActionFightMyNameActionFightPostCode498:
-		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("character not found")
-	case *api.ActionFightMyNameActionFightPostCode499:
-		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("cooldown")
-	case *api.ActionFightMyNameActionFightPostCode598:
-		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("monster is not at this map tile")
+	case *oas.ActionFightMyNameActionFightPostCode486:
+		return oas.CharacterFightDataSchemaFight{}, fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionFightMyNameActionFightPostCode497:
+		return oas.CharacterFightDataSchemaFight{}, fmt.Errorf("inventory is full")
+	case *oas.ActionFightMyNameActionFightPostCode498:
+		return oas.CharacterFightDataSchemaFight{}, fmt.Errorf("character not found")
+	case *oas.ActionFightMyNameActionFightPostCode499:
+		return oas.CharacterFightDataSchemaFight{}, fmt.Errorf("cooldown")
+	case *oas.ActionFightMyNameActionFightPostCode598:
+		return oas.CharacterFightDataSchemaFight{}, fmt.Errorf("monster is not at this map tile")
 	default:
-		return api.CharacterFightDataSchemaFight{}, fmt.Errorf("unknown answer type")
+		return oas.CharacterFightDataSchemaFight{}, fmt.Errorf("unknown answer type")
 	}
 }
 
-func (c *Character) Craft(code string, quantity int) (api.SkillDataSchemaDetails, error) {
+func (c *Character) Craft(code string, quantity int) (oas.SkillDataSchemaDetails, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionCraftingMyNameActionCraftingPost(context.Background(), &api.CraftingSchema{Code: code, Quantity: api.NewOptInt(quantity)}, api.ActionCraftingMyNameActionCraftingPostParams{Name: c.name})
+	res, err := c.cli.ActionCraftingMyNameActionCraftingPost(context.Background(), &oas.CraftingSchema{Code: code, Quantity: oas.NewOptInt(quantity)}, oas.ActionCraftingMyNameActionCraftingPostParams{Name: c.name})
 	if err != nil {
-		return api.SkillDataSchemaDetails{}, err
+		return oas.SkillDataSchemaDetails{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.SkillResponseSchema:
+	case *oas.SkillResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return v.Data.Details, c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionCraftingMyNameActionCraftingPostNotFound:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("craft not found")
-	case *api.ActionCraftingMyNameActionCraftingPostCode478:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionCraftingMyNameActionCraftingPostCode486:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("action is already in progress by your character")
-	case *api.ActionCraftingMyNameActionCraftingPostCode493:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("skill level is too low")
-	case *api.ActionCraftingMyNameActionCraftingPostCode497:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("inventory is full")
-	case *api.ActionCraftingMyNameActionCraftingPostCode498:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("character not found")
-	case *api.ActionCraftingMyNameActionCraftingPostCode499:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("cooldown")
-	case *api.ActionCraftingMyNameActionCraftingPostCode598:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("workshop not at this map tile")
+	case *oas.ActionCraftingMyNameActionCraftingPostNotFound:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("craft not found")
+	case *oas.ActionCraftingMyNameActionCraftingPostCode478:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("missing item or insufficient quantity")
+	case *oas.ActionCraftingMyNameActionCraftingPostCode486:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionCraftingMyNameActionCraftingPostCode493:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("skill level is too low")
+	case *oas.ActionCraftingMyNameActionCraftingPostCode497:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("inventory is full")
+	case *oas.ActionCraftingMyNameActionCraftingPostCode498:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("character not found")
+	case *oas.ActionCraftingMyNameActionCraftingPostCode499:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("cooldown")
+	case *oas.ActionCraftingMyNameActionCraftingPostCode598:
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("workshop not at this map tile")
 	default:
-		return api.SkillDataSchemaDetails{}, fmt.Errorf("unknown answer type")
+		return oas.SkillDataSchemaDetails{}, fmt.Errorf("unknown answer type")
 	}
 }
 
 func (c *Character) Withdraw(code string, quantity int) error {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionWithdrawBankMyNameActionBankWithdrawPost(context.Background(), &api.SimpleItemSchema{Code: code, Quantity: quantity}, api.ActionWithdrawBankMyNameActionBankWithdrawPostParams{Name: c.name})
+	res, err := c.cli.ActionWithdrawBankMyNameActionBankWithdrawPost(context.Background(), &oas.SimpleItemSchema{Code: code, Quantity: quantity}, oas.ActionWithdrawBankMyNameActionBankWithdrawPostParams{Name: c.name})
 	if err != nil {
 		return err
 	}
 
 	switch v := res.(type) {
-	case *api.BankItemTransactionResponseSchema:
+	case *oas.BankItemTransactionResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostNotFound:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostNotFound:
 		return fmt.Errorf("item not found")
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostCode461:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostCode461:
 		return fmt.Errorf("transaction is already in progress with this item/your golds in your bank")
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostCode478:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostCode478:
 		return fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostCode486:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostCode486:
 		return fmt.Errorf("action is already in progress by your character")
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostCode497:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostCode497:
 		return fmt.Errorf("inventory is full")
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostCode498:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostCode498:
 		return fmt.Errorf("character not found")
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostCode499:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostCode499:
 		return fmt.Errorf("cooldown")
-	case *api.ActionWithdrawBankMyNameActionBankWithdrawPostCode598:
+	case *oas.ActionWithdrawBankMyNameActionBankWithdrawPostCode598:
 		return fmt.Errorf("bank not at this map tile")
 	default:
 		return fmt.Errorf("unknown answer type")
@@ -257,38 +257,38 @@ func (c *Character) Withdraw(code string, quantity int) error {
 func (c *Character) Deposit(code string, quantity int) error {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionDepositBankMyNameActionBankDepositPost(context.Background(), &api.SimpleItemSchema{Code: code, Quantity: quantity}, api.ActionDepositBankMyNameActionBankDepositPostParams{Name: c.name})
+	res, err := c.cli.ActionDepositBankMyNameActionBankDepositPost(context.Background(), &oas.SimpleItemSchema{Code: code, Quantity: quantity}, oas.ActionDepositBankMyNameActionBankDepositPostParams{Name: c.name})
 	if err != nil {
 		return err
 	}
 
 	switch v := res.(type) {
-	case *api.BankItemTransactionResponseSchema:
+	case *oas.BankItemTransactionResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionDepositBankMyNameActionBankDepositPostNotFound:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostNotFound:
 		return fmt.Errorf("item not found")
-	case *api.ActionDepositBankMyNameActionBankDepositPostCode461:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostCode461:
 		return fmt.Errorf("transaction is already in progress with this item/your golds in your bank")
-	case *api.ActionDepositBankMyNameActionBankDepositPostCode462:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostCode462:
 		return fmt.Errorf("bank is full")
-	case *api.ActionDepositBankMyNameActionBankDepositPostCode478:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostCode478:
 		return fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionDepositBankMyNameActionBankDepositPostCode486:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostCode486:
 		return fmt.Errorf("action is already in progress by your character")
-	case *api.ActionDepositBankMyNameActionBankDepositPostCode498:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostCode498:
 		return fmt.Errorf("character not found")
-	case *api.ActionDepositBankMyNameActionBankDepositPostCode499:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostCode499:
 		return fmt.Errorf("cooldown")
-	case *api.ActionDepositBankMyNameActionBankDepositPostCode598:
+	case *oas.ActionDepositBankMyNameActionBankDepositPostCode598:
 		return fmt.Errorf("bank not at this map tile")
 	default:
 		return fmt.Errorf("unknown answer type")
 	}
 }
 
-func (c *Character) FindOnMap(code string, cachable bool) (api.MapSchema, error) {
+func (c *Character) FindOnMap(code string, cachable bool) (oas.MapSchema, error) {
 	if cachable {
 		if tile, ok := c.mapsCache[code]; ok {
 			return tile, nil
@@ -297,13 +297,13 @@ func (c *Character) FindOnMap(code string, cachable bool) (api.MapSchema, error)
 
 	requestCount.Inc()
 
-	res, err := c.cli.GetAllMapsMapsGet(context.Background(), api.GetAllMapsMapsGetParams{ContentCode: api.NewOptString(code)})
+	res, err := c.cli.GetAllMapsMapsGet(context.Background(), oas.GetAllMapsMapsGetParams{ContentCode: oas.NewOptString(code)})
 	if err != nil {
-		return api.MapSchema{}, err
+		return oas.MapSchema{}, err
 	}
 
 	if len(res.Data) == 0 {
-		return api.MapSchema{}, fmt.Errorf("not found")
+		return oas.MapSchema{}, fmt.Errorf("not found")
 	}
 
 	if cachable {
@@ -313,7 +313,7 @@ func (c *Character) FindOnMap(code string, cachable bool) (api.MapSchema, error)
 	return res.Data[0], nil
 }
 
-func (c *Character) GetResource(code string, cachable bool) (api.ResourceSchema, error) {
+func (c *Character) GetResource(code string, cachable bool) (oas.ResourceSchema, error) {
 	if cachable {
 		if resource, ok := c.resourceCache[code]; ok {
 			return resource, nil
@@ -322,26 +322,26 @@ func (c *Character) GetResource(code string, cachable bool) (api.ResourceSchema,
 
 	requestCount.Inc()
 
-	res, err := c.cli.GetResourceResourcesCodeGet(context.Background(), api.GetResourceResourcesCodeGetParams{Code: code})
+	res, err := c.cli.GetResourceResourcesCodeGet(context.Background(), oas.GetResourceResourcesCodeGetParams{Code: code})
 	if err != nil {
-		return api.ResourceSchema{}, err
+		return oas.ResourceSchema{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.ResourceResponseSchema:
+	case *oas.ResourceResponseSchema:
 		if cachable {
 			c.resourceCache[code] = v.Data
 		}
 
 		return v.Data, nil
-	case *api.GetResourceResourcesCodeGetNotFound:
-		return api.ResourceSchema{}, fmt.Errorf("resource not found")
+	case *oas.GetResourceResourcesCodeGetNotFound:
+		return oas.ResourceSchema{}, fmt.Errorf("resource not found")
 	default:
-		return api.ResourceSchema{}, fmt.Errorf("unknown answer type")
+		return oas.ResourceSchema{}, fmt.Errorf("unknown answer type")
 	}
 }
 
-func (c *Character) GetMonster(code string, cachable bool) (api.MonsterSchema, error) {
+func (c *Character) GetMonster(code string, cachable bool) (oas.MonsterSchema, error) {
 	if cachable {
 		if monster, ok := c.monsterCache[code]; ok {
 			return monster, nil
@@ -350,93 +350,93 @@ func (c *Character) GetMonster(code string, cachable bool) (api.MonsterSchema, e
 
 	requestCount.Inc()
 
-	res, err := c.cli.GetMonsterMonstersCodeGet(context.Background(), api.GetMonsterMonstersCodeGetParams{Code: code})
+	res, err := c.cli.GetMonsterMonstersCodeGet(context.Background(), oas.GetMonsterMonstersCodeGetParams{Code: code})
 	if err != nil {
-		return api.MonsterSchema{}, err
+		return oas.MonsterSchema{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.MonsterResponseSchema:
+	case *oas.MonsterResponseSchema:
 		if cachable {
 			c.monsterCache[code] = v.Data
 		}
 
 		return v.Data, nil
-	case *api.GetMonsterMonstersCodeGetNotFound:
-		return api.MonsterSchema{}, fmt.Errorf("monster not found")
+	case *oas.GetMonsterMonstersCodeGetNotFound:
+		return oas.MonsterSchema{}, fmt.Errorf("monster not found")
 	default:
-		return api.MonsterSchema{}, fmt.Errorf("unknown answer type: %v", v)
+		return oas.MonsterSchema{}, fmt.Errorf("unknown answer type: %v", v)
 	}
 }
 
-func (c *Character) Recycle(code string, quantity int) (api.RecyclingDataSchemaDetails, error) {
+func (c *Character) Recycle(code string, quantity int) (oas.RecyclingDataSchemaDetails, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionRecyclingMyNameActionRecyclingPost(context.Background(), &api.RecyclingSchema{Code: code, Quantity: api.NewOptInt(quantity)}, api.ActionRecyclingMyNameActionRecyclingPostParams{Name: c.name})
+	res, err := c.cli.ActionRecyclingMyNameActionRecyclingPost(context.Background(), &oas.RecyclingSchema{Code: code, Quantity: oas.NewOptInt(quantity)}, oas.ActionRecyclingMyNameActionRecyclingPostParams{Name: c.name})
 	if err != nil {
-		return api.RecyclingDataSchemaDetails{}, err
+		return oas.RecyclingDataSchemaDetails{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.RecyclingResponseSchema:
+	case *oas.RecyclingResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return v.Data.Details, c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionRecyclingMyNameActionRecyclingPostNotFound:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("item not found")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode473:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("item cannot be recycled")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode478:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode486:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("action is already in progress by your character")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode493:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("skill level is too low")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode497:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("inventory is full")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode498:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("character not found")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode499:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("cooldown")
-	case *api.ActionRecyclingMyNameActionRecyclingPostCode598:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("workshop not found on this map")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostNotFound:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("item not found")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode473:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("item cannot be recycled")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode478:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("missing item or insufficient quantity")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode486:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode493:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("skill level is too low")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode497:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("inventory is full")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode498:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("character not found")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode499:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("cooldown")
+	case *oas.ActionRecyclingMyNameActionRecyclingPostCode598:
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("workshop not found on this map")
 	default:
-		return api.RecyclingDataSchemaDetails{}, fmt.Errorf("unknown answer type")
+		return oas.RecyclingDataSchemaDetails{}, fmt.Errorf("unknown answer type")
 	}
 }
 
 func (c *Character) Equip(code string, slot string, quantity int) error {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionEquipItemMyNameActionEquipPost(context.Background(), &api.EquipSchema{Code: code, Slot: api.EquipSchemaSlot(slot), Quantity: api.NewOptInt(quantity)}, api.ActionEquipItemMyNameActionEquipPostParams{Name: c.name})
+	res, err := c.cli.ActionEquipItemMyNameActionEquipPost(context.Background(), &oas.EquipSchema{Code: code, Slot: oas.EquipSchemaSlot(slot), Quantity: oas.NewOptInt(quantity)}, oas.ActionEquipItemMyNameActionEquipPostParams{Name: c.name})
 	if err != nil {
 		return err
 	}
 
 	switch v := res.(type) {
-	case *api.EquipmentResponseSchema:
+	case *oas.EquipmentResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionEquipItemMyNameActionEquipPostNotFound:
+	case *oas.ActionEquipItemMyNameActionEquipPostNotFound:
 		return fmt.Errorf("item not found")
-	case *api.ActionEquipItemMyNameActionEquipPostCode478:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode478:
 		return fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionEquipItemMyNameActionEquipPostCode484:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode484:
 		return fmt.Errorf("character can't equip more than 100 consumables in the same slot")
-	case *api.ActionEquipItemMyNameActionEquipPostCode485:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode485:
 		return fmt.Errorf("item is already equipped")
-	case *api.ActionEquipItemMyNameActionEquipPostCode486:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode486:
 		return fmt.Errorf("action is already in progress by your character")
-	case *api.ActionEquipItemMyNameActionEquipPostCode491:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode491:
 		return fmt.Errorf("slot is not empty")
-	case *api.ActionEquipItemMyNameActionEquipPostCode496:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode496:
 		return fmt.Errorf("character level is too low")
-	case *api.ActionEquipItemMyNameActionEquipPostCode497:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode497:
 		return fmt.Errorf("inventory is full")
-	case *api.ActionEquipItemMyNameActionEquipPostCode498:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode498:
 		return fmt.Errorf("character not found")
-	case *api.ActionEquipItemMyNameActionEquipPostCode499:
+	case *oas.ActionEquipItemMyNameActionEquipPostCode499:
 		return fmt.Errorf("cooldown")
 	default:
 		return fmt.Errorf("unknown answer type: %v", v)
@@ -446,117 +446,117 @@ func (c *Character) Equip(code string, slot string, quantity int) error {
 func (c *Character) UnEquip(code string, slot string, quantity int) error {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionUnequipItemMyNameActionUnequipPost(context.Background(), &api.UnequipSchema{Slot: api.UnequipSchemaSlot(slot), Quantity: api.NewOptInt(quantity)}, api.ActionUnequipItemMyNameActionUnequipPostParams{Name: c.name})
+	res, err := c.cli.ActionUnequipItemMyNameActionUnequipPost(context.Background(), &oas.UnequipSchema{Slot: oas.UnequipSchemaSlot(slot), Quantity: oas.NewOptInt(quantity)}, oas.ActionUnequipItemMyNameActionUnequipPostParams{Name: c.name})
 	if err != nil {
 		return err
 	}
 
 	switch v := res.(type) {
-	case *api.EquipmentResponseSchema:
+	case *oas.EquipmentResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionUnequipItemMyNameActionUnequipPostNotFound:
+	case *oas.ActionUnequipItemMyNameActionUnequipPostNotFound:
 		return fmt.Errorf("item not found")
-	case *api.ActionUnequipItemMyNameActionUnequipPostCode478:
+	case *oas.ActionUnequipItemMyNameActionUnequipPostCode478:
 		return fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionUnequipItemMyNameActionUnequipPostCode486:
+	case *oas.ActionUnequipItemMyNameActionUnequipPostCode486:
 		return fmt.Errorf("action is already in progress by your character")
-	case *api.ActionUnequipItemMyNameActionUnequipPostCode491:
+	case *oas.ActionUnequipItemMyNameActionUnequipPostCode491:
 		return fmt.Errorf("slot is empty")
-	case *api.ActionUnequipItemMyNameActionUnequipPostCode497:
+	case *oas.ActionUnequipItemMyNameActionUnequipPostCode497:
 		return fmt.Errorf("inventory is full")
-	case *api.ActionUnequipItemMyNameActionUnequipPostCode498:
+	case *oas.ActionUnequipItemMyNameActionUnequipPostCode498:
 		return fmt.Errorf("character not found")
-	case *api.ActionUnequipItemMyNameActionUnequipPostCode499:
+	case *oas.ActionUnequipItemMyNameActionUnequipPostCode499:
 		return fmt.Errorf("cooldown")
 	default:
 		return fmt.Errorf("unknown answer type: %v", v)
 	}
 }
 
-func (c *Character) CompleteTask() (api.TasksRewardDataSchemaReward, error) {
+func (c *Character) CompleteTask() (oas.TasksRewardDataSchemaReward, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionCompleteTaskMyNameActionTaskCompletePost(context.Background(), api.ActionCompleteTaskMyNameActionTaskCompletePostParams{Name: c.name})
+	res, err := c.cli.ActionCompleteTaskMyNameActionTaskCompletePost(context.Background(), oas.ActionCompleteTaskMyNameActionTaskCompletePostParams{Name: c.name})
 	if err != nil {
-		return api.TasksRewardDataSchemaReward{}, err
+		return oas.TasksRewardDataSchemaReward{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.TasksRewardResponseSchema:
+	case *oas.TasksRewardResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return v.Data.Reward, c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode486:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("action is already in progress by your character")
-	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode487:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("character has no task")
-	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode488:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("character has not completed the task")
-	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode497:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("inventory is full")
-	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode498:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("character not found")
-	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode499:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("cooldown")
-	case *api.ActionCompleteTaskMyNameActionTaskCompletePostCode598:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("tasks master is not at this tile map")
+	case *oas.ActionCompleteTaskMyNameActionTaskCompletePostCode486:
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionCompleteTaskMyNameActionTaskCompletePostCode487:
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("character has no task")
+	case *oas.ActionCompleteTaskMyNameActionTaskCompletePostCode488:
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("character has not completed the task")
+	case *oas.ActionCompleteTaskMyNameActionTaskCompletePostCode497:
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("inventory is full")
+	case *oas.ActionCompleteTaskMyNameActionTaskCompletePostCode498:
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("character not found")
+	case *oas.ActionCompleteTaskMyNameActionTaskCompletePostCode499:
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("cooldown")
+	case *oas.ActionCompleteTaskMyNameActionTaskCompletePostCode598:
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("tasks master is not at this tile map")
 	default:
-		return api.TasksRewardDataSchemaReward{}, fmt.Errorf("unknown answer type")
+		return oas.TasksRewardDataSchemaReward{}, fmt.Errorf("unknown answer type")
 	}
 }
 
-func (c *Character) AcceptNewTask() (api.TaskDataSchemaTask, error) {
+func (c *Character) AcceptNewTask() (oas.TaskDataSchemaTask, error) {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionAcceptNewTaskMyNameActionTaskNewPost(context.Background(), api.ActionAcceptNewTaskMyNameActionTaskNewPostParams{Name: c.name})
+	res, err := c.cli.ActionAcceptNewTaskMyNameActionTaskNewPost(context.Background(), oas.ActionAcceptNewTaskMyNameActionTaskNewPostParams{Name: c.name})
 	if err != nil {
-		return api.TaskDataSchemaTask{}, err
+		return oas.TaskDataSchemaTask{}, err
 	}
 
 	switch v := res.(type) {
-	case *api.TaskResponseSchema:
+	case *oas.TaskResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return v.Data.Task, c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode486:
-		return api.TaskDataSchemaTask{}, fmt.Errorf("action is already in progress by your character")
-	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode489:
-		return api.TaskDataSchemaTask{}, fmt.Errorf("character already has a task")
-	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode498:
-		return api.TaskDataSchemaTask{}, fmt.Errorf("character not found")
-	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode499:
-		return api.TaskDataSchemaTask{}, fmt.Errorf("cooldown")
-	case *api.ActionAcceptNewTaskMyNameActionTaskNewPostCode598:
-		return api.TaskDataSchemaTask{}, fmt.Errorf("tasks master is not at this tile map")
+	case *oas.ActionAcceptNewTaskMyNameActionTaskNewPostCode486:
+		return oas.TaskDataSchemaTask{}, fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionAcceptNewTaskMyNameActionTaskNewPostCode489:
+		return oas.TaskDataSchemaTask{}, fmt.Errorf("character already has a task")
+	case *oas.ActionAcceptNewTaskMyNameActionTaskNewPostCode498:
+		return oas.TaskDataSchemaTask{}, fmt.Errorf("character not found")
+	case *oas.ActionAcceptNewTaskMyNameActionTaskNewPostCode499:
+		return oas.TaskDataSchemaTask{}, fmt.Errorf("cooldown")
+	case *oas.ActionAcceptNewTaskMyNameActionTaskNewPostCode598:
+		return oas.TaskDataSchemaTask{}, fmt.Errorf("tasks master is not at this tile map")
 	default:
-		return api.TaskDataSchemaTask{}, fmt.Errorf("unknown answer type")
+		return oas.TaskDataSchemaTask{}, fmt.Errorf("unknown answer type")
 	}
 }
 
 func (c *Character) CancelTask() error {
 	requestCount.Inc()
 
-	res, err := c.cli.ActionTaskCancelMyNameActionTaskCancelPost(context.Background(), api.ActionTaskCancelMyNameActionTaskCancelPostParams{Name: c.name})
+	res, err := c.cli.ActionTaskCancelMyNameActionTaskCancelPost(context.Background(), oas.ActionTaskCancelMyNameActionTaskCancelPostParams{Name: c.name})
 	if err != nil {
 		return err
 	}
 
 	switch v := res.(type) {
-	case *api.TaskCancelledResponseSchema:
+	case *oas.TaskCancelledResponseSchema:
 		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
 
 		return c.updateData(unsafe.Pointer(&v.Data.Character))
-	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode478:
+	case *oas.ActionTaskCancelMyNameActionTaskCancelPostCode478:
 		return fmt.Errorf("missing item or insufficient quantity")
-	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode486:
+	case *oas.ActionTaskCancelMyNameActionTaskCancelPostCode486:
 		return fmt.Errorf("action is already in progress by your character")
-	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode498:
+	case *oas.ActionTaskCancelMyNameActionTaskCancelPostCode498:
 		return fmt.Errorf("character not found")
-	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode499:
+	case *oas.ActionTaskCancelMyNameActionTaskCancelPostCode499:
 		return fmt.Errorf("cooldown")
-	case *api.ActionTaskCancelMyNameActionTaskCancelPostCode598:
+	case *oas.ActionTaskCancelMyNameActionTaskCancelPostCode598:
 		return fmt.Errorf("tasks master is not at this tile map")
 	default:
 		return fmt.Errorf("unknown answer type")

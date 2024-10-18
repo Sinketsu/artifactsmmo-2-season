@@ -3,8 +3,6 @@ package strategy
 import (
 	"fmt"
 
-	api "github.com/Sinketsu/artifactsmmo/gen/oas"
-	"github.com/Sinketsu/artifactsmmo/internal/events"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
@@ -13,8 +11,10 @@ type SimpleGatherStrategy struct {
 	sell          []string
 	bank          []string
 	craft         string
-	events        *events.Service
 	allowedEvents []string
+
+	// cache state for current resource
+	currentResource string
 }
 
 // NewTasksFightStrategy returns strategy that will just simple gather one resource
@@ -47,9 +47,8 @@ func (s *SimpleGatherStrategy) Craft(item string) *SimpleGatherStrategy {
 }
 
 // AllowEvents sets list of allowed events. When event will be active - gather event resources, else gather usual resource,  setted in Gather
-func (s *SimpleGatherStrategy) AllowEvents(events *events.Service, names ...string) *SimpleGatherStrategy {
+func (s *SimpleGatherStrategy) AllowEvents(names ...string) *SimpleGatherStrategy {
 	s.allowedEvents = names
-	s.events = events
 	return s
 }
 
@@ -87,11 +86,9 @@ func (s *SimpleGatherStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	if s.events != nil {
-		for _, eventName := range s.allowedEvents {
-			if event := s.events.Get(eventName); event != nil {
-				return s.gatherHelper(c, event.Map.Content.MapContentSchema.Code, false)
-			}
+	for _, eventName := range s.allowedEvents {
+		if event := c.Events().Get(eventName); event != nil {
+			return s.gatherHelper(c, event.Map.Content.MapContentSchema.Code, false)
 		}
 	}
 
@@ -104,31 +101,23 @@ func (s *SimpleGatherStrategy) gatherHelper(c *generic.Character, code string, c
 		return fmt.Errorf("find on map: %w", err)
 	}
 
-	resource, err := c.GetResource(code, cachable)
-	if err != nil {
-		return fmt.Errorf("get resource: %w", err)
-	}
+	if s.currentResource != code {
+		c.Bank().Lock()
 
-	// TODO make helper to choose best tool
-	switch resource.Skill {
-	case api.ResourceSchemaSkillFishing:
-		if c.InInventory("spruce_fishing_rod") > 0 {
-			if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "spruce_fishing_rod", Type: "weapon"}}); err != nil {
-				return fmt.Errorf("wear: %w", err)
-			}
+		gear, err := c.GetBestGatherGearFor(code)
+		if err != nil {
+			c.Bank().Unlock()
+			return fmt.Errorf("get best gear: %w", err)
 		}
-	case api.ResourceSchemaSkillMining:
-		if c.InInventory("iron_pickaxe") > 0 {
-			if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "iron_pickaxe", Type: "weapon"}}); err != nil {
-				return fmt.Errorf("wear: %w", err)
-			}
+
+		err = c.MacroWear(gear)
+		if err != nil {
+			c.Bank().Unlock()
+			return fmt.Errorf("wear: %w", err)
 		}
-	case api.ResourceSchemaSkillWoodcutting:
-		if c.InInventory("iron_axe") > 0 {
-			if err := c.MacroWear([]api.SingleItemSchemaItem{{Code: "iron_axe", Type: "weapon"}}); err != nil {
-				return fmt.Errorf("wear: %w", err)
-			}
-		}
+
+		c.Bank().Unlock()
+		s.currentResource = code
 	}
 
 	return c.MacroGather(tile.X, tile.Y)

@@ -3,14 +3,15 @@ package generic
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
-	api "github.com/Sinketsu/artifactsmmo/gen/oas"
+	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
-func gearCombinations(idx int, all ...[][]api.SingleItemSchemaItem) [][]api.SingleItemSchemaItem {
-	result := make([][]api.SingleItemSchemaItem, 0)
+func gearCombinations(idx int, all ...[][]oas.SingleItemSchemaItem) [][]oas.SingleItemSchemaItem {
+	result := make([][]oas.SingleItemSchemaItem, 0)
 
 	if idx == len(all)-1 {
 		return all[idx]
@@ -28,7 +29,7 @@ func gearCombinations(idx int, all ...[][]api.SingleItemSchemaItem) [][]api.Sing
 		}
 
 		for _, other := range remainingSet {
-			newSet := []api.SingleItemSchemaItem{}
+			newSet := []oas.SingleItemSchemaItem{}
 			newSet = append(newSet, slotCombinations...)
 			newSet = append(newSet, other...)
 
@@ -39,14 +40,19 @@ func gearCombinations(idx int, all ...[][]api.SingleItemSchemaItem) [][]api.Sing
 	return result
 }
 
-func (c *Character) GetBestGearFor(monsterCode string) ([]api.SingleItemSchemaItem, error) {
+func (c *Character) GetBestGearFor(monsterCode string) ([]oas.SingleItemSchemaItem, error) {
 	monster, err := c.GetMonster(monsterCode, true)
 	if err != nil {
 		return nil, fmt.Errorf("get monster: %w", err)
 	}
 
-	var weapons, helmets, shields, bodyArmors, legsArmors, boots, rings, amulets []api.SingleItemSchemaItem
-	for _, i := range c.Data().Inventory {
+	items, err := c.bank.Items()
+	if err != nil {
+		return nil, fmt.Errorf("get bank items: %w", err)
+	}
+
+	var weapons, helmets, shields, bodyArmors, legsArmors, boots, rings, amulets []oas.SingleItemSchemaItem
+	for _, i := range items {
 		if i.Code == "" {
 			continue
 		}
@@ -54,6 +60,10 @@ func (c *Character) GetBestGearFor(monsterCode string) ([]api.SingleItemSchemaIt
 		item, err := c.GetItem(i.Code, true)
 		if err != nil {
 			return nil, fmt.Errorf("get item %s: %w", i.Code, err)
+		}
+
+		if item.Level > c.data.Level {
+			continue
 		}
 
 		switch item.Type {
@@ -150,7 +160,7 @@ func (c *Character) GetBestGearFor(monsterCode string) ([]api.SingleItemSchemaIt
 	helmetCombinations := combinations.Combinations(helmets, 1)
 
 	bestScore := 0.0
-	bestGear := []api.SingleItemSchemaItem{}
+	bestGear := []oas.SingleItemSchemaItem{}
 
 	setCombinations := gearCombinations(0, weaponCombinations, bodyArmorCombinations, legsArmorCombinations,
 		shieldCombinations, amuletCombinations, bootsCombinations, ringsCombinations, helmetCombinations)
@@ -181,6 +191,60 @@ func (c *Character) GetBestGearFor(monsterCode string) ([]api.SingleItemSchemaIt
 	c.Log("found best gear for monster", monster.Code, "with effective dmg:", bestScore, "[", strings.Join(bestGearCodes, ", "), "]")
 
 	return bestGear, nil
+}
+
+func (c *Character) GetBestGatherGearFor(resourceCode string) ([]oas.SingleItemSchemaItem, error) {
+	resource, err := c.GetResource(resourceCode, true)
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := c.bank.Items()
+	if err != nil {
+		return nil, fmt.Errorf("get bank items: %w", err)
+	}
+
+	var tools []oas.SingleItemSchemaItem
+	for _, item := range items {
+		if item.Subtype == "tool" && item.Level <= c.data.Level {
+			tools = append(tools, item.SingleItemSchemaItem)
+		}
+	}
+
+	if c.data.WeaponSlot != "" {
+		item, err := c.GetItem(c.data.WeaponSlot, true)
+		if err != nil {
+			return nil, fmt.Errorf("get item (current weapon): %w", err)
+		}
+
+		if item.Subtype == "tool" {
+			tools = append(tools, item)
+		}
+	}
+
+	slices.SortFunc(tools, func(a, b oas.SingleItemSchemaItem) int {
+		aEffect, bEffect := 0, 0
+
+		for _, effect := range a.Effects {
+			if effect.Name == string(resource.Skill) {
+				aEffect = effect.Value
+				break
+			}
+		}
+
+		for _, effect := range b.Effects {
+			if effect.Name == string(resource.Skill) {
+				bEffect = effect.Value
+				break
+			}
+		}
+
+		return aEffect - bEffect
+	})
+
+	c.Log("found best gear for resource", resource.Code, ":", tools[0].Code)
+
+	return []oas.SingleItemSchemaItem{tools[0]}, nil
 }
 
 func (c *Character) InventoryItemCount() int {
@@ -214,7 +278,7 @@ func (c *Character) InInventory(code string) int {
 }
 
 func (c *Character) InBank(code string) (int, error) {
-	res, err := c.cli.GetBankItemsMyBankItemsGet(context.Background(), api.GetBankItemsMyBankItemsGetParams{ItemCode: api.NewOptString(code)})
+	res, err := c.cli.GetBankItemsMyBankItemsGet(context.Background(), oas.GetBankItemsMyBankItemsGetParams{ItemCode: oas.NewOptString(code)})
 	if err != nil {
 		return 0, err
 	}

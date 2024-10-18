@@ -6,23 +6,18 @@ import (
 	"sync"
 	"time"
 
-	api "github.com/Sinketsu/artifactsmmo/gen/oas"
-	"github.com/Sinketsu/artifactsmmo/internal/generic"
+	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
+	"github.com/Sinketsu/artifactsmmo/internal/api"
 )
 
 type Service struct {
 	cli *api.Client
 
-	events []api.ActiveEventSchema
+	events []oas.ActiveEventSchema
 	mu     sync.Mutex
 }
 
-func New(params generic.ServerParams) *Service {
-	client, err := api.NewClient(params.ServerUrl, &generic.Auth{Token: params.ServerToken})
-	if err != nil {
-		panic(err)
-	}
-
+func New(client *api.Client) *Service {
 	return &Service{
 		cli: client,
 	}
@@ -30,7 +25,7 @@ func New(params generic.ServerParams) *Service {
 
 func (s *Service) Update(interval time.Duration) {
 	for range time.Tick(interval) {
-		result, err := s.cli.GetAllEventsEventsGet(context.TODO(), api.GetAllEventsEventsGetParams{})
+		result, err := s.cli.GetAllEventsEventsGet(context.TODO(), oas.GetAllEventsEventsGetParams{})
 		if err != nil {
 			fmt.Println("fail update event list:", err)
 		}
@@ -41,7 +36,7 @@ func (s *Service) Update(interval time.Duration) {
 	}
 }
 
-func (s *Service) Get(name string) *api.ActiveEventSchema {
+func (s *Service) Get(name string) *oas.ActiveEventSchema {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

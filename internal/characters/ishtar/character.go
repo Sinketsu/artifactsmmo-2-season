@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Sinketsu/artifactsmmo/internal/events"
+	"github.com/Sinketsu/artifactsmmo/internal/api"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 	"github.com/Sinketsu/artifactsmmo/internal/strategy"
 )
@@ -16,8 +16,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(params generic.Params) *Character {
-	gc, err := generic.NewCharacter(params)
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Ishtar"}, bank, events)
 	if err != nil {
 		panic(err)
 	}
@@ -27,13 +27,13 @@ func NewCharacter(params generic.Params) *Character {
 	}
 }
 
-func (c *Character) Live(ctx context.Context, events *events.Service) {
+func (c *Character) Live(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			err := c.do(events)
+			err := c.do()
 			if err != nil {
 				c.Log(err)
 				time.Sleep(1 * time.Second)
@@ -42,15 +42,14 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 	}
 }
 
-func (c *Character) do(events *events.Service) error {
+func (c *Character) do() error {
 	c.setStrategy(
-		"fishing bass and sell it (allow all events)",
+		"fishing shrimp for a golden shrimp (allow all events)",
 		strategy.NewSimpleGatherStrategy().
-			AllowEvents(events, "Strange Apparition", "Magic Apparition").
-			Gather("bass_fishing_spot").
-			Craft("dead_wood_plank").
-			Sell("bass").
-			Bank("dead_wood_plank", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap"),
+			AllowEvents("Strange Apparition", "Magic Apparition").
+			Gather("shrimp_fishing_spot").
+			Sell("shrimp").
+			Bank("golden_shrimp", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap"),
 	)
 
 	// c.setStrategy(

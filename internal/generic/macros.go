@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	api "github.com/Sinketsu/artifactsmmo/gen/oas"
+	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 )
 
 func (c *Character) MacroWithdraw(code string, quantity int) error {
@@ -164,145 +164,71 @@ func (c *Character) MacroRecycleAll(codes ...string) error {
 	return nil
 }
 
-func (c *Character) MacroWear(items []api.SingleItemSchemaItem) error {
+func (c *Character) MacroWear(items []oas.SingleItemSchemaItem) error {
 	ringCount := 0
 
+	err := c.Move(4, 1) // Bank
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
 	for _, item := range items {
+		var current string
+		slot := item.Type
+
 		switch item.Type {
 		case "weapon":
-			if c.Data().WeaponSlot == item.Code {
-				continue
-			}
-
-			if c.Data().WeaponSlot != "" {
-				if err := c.UnEquip(c.Data().WeaponSlot, item.Type, 1); err != nil {
-					return fmt.Errorf("unequip: %w", err)
-				}
-			}
-
-			if err := c.Equip(item.Code, item.Type, 1); err != nil {
-				return err
-			}
+			current = c.data.WeaponSlot
 		case "helmet":
-			if c.Data().HelmetSlot == item.Code {
-				continue
-			}
-
-			if c.Data().HelmetSlot != "" {
-				if err := c.UnEquip(c.Data().HelmetSlot, item.Type, 1); err != nil {
-					return fmt.Errorf("unequip: %w", err)
-				}
-			}
-
-			if err := c.Equip(item.Code, item.Type, 1); err != nil {
-				return err
-			}
+			current = c.data.HelmetSlot
 		case "body_armor":
-			if c.Data().BodyArmorSlot == item.Code {
-				continue
-			}
-
-			if c.Data().BodyArmorSlot != "" {
-				if err := c.UnEquip(c.Data().BodyArmorSlot, item.Type, 1); err != nil {
-					return fmt.Errorf("unequip: %w", err)
-				}
-			}
-
-			if err := c.Equip(item.Code, item.Type, 1); err != nil {
-				return err
-			}
+			current = c.data.BodyArmorSlot
 		case "leg_armor":
-			if c.Data().LegArmorSlot == item.Code {
-				continue
-			}
-
-			if c.Data().LegArmorSlot != "" {
-				if err := c.UnEquip(c.Data().LegArmorSlot, item.Type, 1); err != nil {
-					return fmt.Errorf("unequip: %w", err)
-				}
-			}
-
-			if err := c.Equip(item.Code, item.Type, 1); err != nil {
-				return err
-			}
+			current = c.data.LegArmorSlot
 		case "shield":
-			if c.Data().ShieldSlot == item.Code {
-				continue
-			}
-
-			if c.Data().ShieldSlot != "" {
-				if err := c.UnEquip(c.Data().ShieldSlot, item.Type, 1); err != nil {
-					return fmt.Errorf("unequip: %w", err)
-				}
-			}
-
-			if err := c.Equip(item.Code, item.Type, 1); err != nil {
-				return err
-			}
+			current = c.data.ShieldSlot
 		case "boots":
-			if c.Data().BootsSlot == item.Code {
-				continue
-			}
-
-			if c.Data().BootsSlot != "" {
-				if err := c.UnEquip(c.Data().BootsSlot, item.Type, 1); err != nil {
-					return fmt.Errorf("unequip: %w", err)
-				}
-			}
-
-			if err := c.Equip(item.Code, item.Type, 1); err != nil {
-				return err
-			}
+			current = c.data.BootsSlot
 		case "amulet":
-			if c.Data().AmuletSlot == item.Code {
-				continue
-			}
-
-			if c.Data().AmuletSlot != "" {
-				if err := c.UnEquip(c.Data().AmuletSlot, item.Type, 1); err != nil {
-					return fmt.Errorf("unequip: %w", err)
-				}
-			}
-
-			if err := c.Equip(item.Code, item.Type, 1); err != nil {
-				return err
-			}
+			current = c.data.AmuletSlot
 		case "ring":
-			if ringCount == 0 {
+			switch ringCount {
+			case 0:
+				current = c.data.Ring1Slot
+				slot = "ring1"
 				ringCount++
-
-				if c.Data().Ring1Slot == item.Code {
-					continue
-				}
-
-				if c.Data().Ring1Slot != "" {
-					if err := c.UnEquip(c.Data().Ring1Slot, "ring1", 1); err != nil {
-						return fmt.Errorf("unequip: %w", err)
-					}
-				}
-
-				if err := c.Equip(item.Code, "ring1", 1); err != nil {
-					return fmt.Errorf("equip: %w", err)
-				}
-			} else {
-				if c.Data().Ring2Slot == item.Code {
-					continue
-				}
-
-				if c.Data().Ring2Slot != "" {
-					if err := c.UnEquip(c.Data().Ring2Slot, "ring2", 1); err != nil {
-						return fmt.Errorf("unequip: %w", err)
-					}
-				}
-
-				if err := c.Equip(item.Code, "ring2", 1); err != nil {
-					return err
-				}
+			case 1:
+				current = c.data.Ring2Slot
+				slot = "ring2"
+				ringCount++
 			}
 		default:
 			return fmt.Errorf("unknown type: %s", item.Type)
 		}
+
+		if current == item.Code {
+			continue
+		}
+
+		if current != "" {
+			if err := c.UnEquip(current, slot, 1); err != nil {
+				return fmt.Errorf("unequip: %w", err)
+			}
+
+			if err := c.Deposit(current, 1); err != nil {
+				return fmt.Errorf("deposit: %w", err)
+			}
+		}
+
+		if err := c.Withdraw(item.Code, 1); err != nil {
+			return fmt.Errorf("withdraw: %w", err)
+		}
+
+		if err := c.Equip(item.Code, slot, 1); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 

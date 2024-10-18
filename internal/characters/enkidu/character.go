@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Sinketsu/artifactsmmo/internal/events"
+	"github.com/Sinketsu/artifactsmmo/internal/api"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 	"github.com/Sinketsu/artifactsmmo/internal/strategy"
 )
@@ -16,8 +16,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(params generic.Params) *Character {
-	gc, err := generic.NewCharacter(params)
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Enkidu"}, bank, events)
 	if err != nil {
 		panic(err)
 	}
@@ -27,7 +27,7 @@ func NewCharacter(params generic.Params) *Character {
 	}
 }
 
-func (c *Character) Live(ctx context.Context, events *events.Service) {
+func (c *Character) Live(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -43,27 +43,12 @@ func (c *Character) Live(ctx context.Context, events *events.Service) {
 }
 
 func (c *Character) do() error {
-	switch {
-	case c.Data().WeaponcraftingLevel < 30:
+	if c.Data().WeaponcraftingLevel < 35 {
 		c.setStrategy(
-			"craft skull_staff for up skill",
+			"craft gold_sword for up skill",
 			strategy.NewSimpleCraftStrategy().
-				Craft("skull_staff").
-				Recycle("skull_staff"),
-		)
-	case c.Data().GearcraftingLevel < 30:
-		c.setStrategy(
-			"craft skeleton_helmet for up skill",
-			strategy.NewSimpleCraftStrategy().
-				Craft("skeleton_helmet").
-				Recycle("skeleton_helmet", "skull_staff"),
-		)
-	case c.Data().JewelrycraftingLevel < 30:
-		c.setStrategy(
-			"craft dreadful_amulet for up skill",
-			strategy.NewSimpleCraftStrategy().
-				Craft("dreadful_amulet").
-				Recycle("dreadful_amulet", "skeleton_helmet"),
+				Craft("gold_sword").
+				Recycle("gold_sword"),
 		)
 	}
 
