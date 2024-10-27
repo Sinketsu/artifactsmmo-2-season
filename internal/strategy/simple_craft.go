@@ -5,14 +5,17 @@ import (
 	"math"
 	"time"
 
+	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
+	"github.com/Sinketsu/artifactsmmo/internal/bank"
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
 type SimpleCraftStrategy struct {
-	craft   string
-	recycle []string
-	bank    []string
-	sell    []string
+	craft       []string
+	recycle     []string
+	deposit     []string
+	depositGold bool
+	sell        []string
 }
 
 // NewTasksFightStrategy returns strategy that will just try spend all resources to craft one item
@@ -21,7 +24,7 @@ func NewSimpleCraftStrategy() *SimpleCraftStrategy {
 }
 
 // Craft sets an item to craft. Required
-func (s *SimpleCraftStrategy) Craft(item string) *SimpleCraftStrategy {
+func (s *SimpleCraftStrategy) Craft(item ...string) *SimpleCraftStrategy {
 	s.craft = item
 	return s
 }
@@ -38,15 +41,21 @@ func (s *SimpleCraftStrategy) Sell(items ...string) *SimpleCraftStrategy {
 	return s
 }
 
-// Bank sets items to deposit in Bank after craft
-func (s *SimpleCraftStrategy) Bank(items ...string) *SimpleCraftStrategy {
-	s.bank = items
+// Deposit sets items to deposit in Bank after craft
+func (s *SimpleCraftStrategy) Deposit(items ...string) *SimpleCraftStrategy {
+	s.deposit = items
+	return s
+}
+
+// DepositGold sets allowment to deposit all gold from inventory
+func (s *SimpleCraftStrategy) DepositGold() *SimpleCraftStrategy {
+	s.depositGold = true
 	return s
 }
 
 func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
-	if s.craft == "" {
-		return fmt.Errorf("craft item not set")
+	if s.craft == nil {
+		return fmt.Errorf("craft items are not set")
 	}
 
 	if len(s.recycle) > 0 {
@@ -55,9 +64,15 @@ func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	if len(s.bank) > 0 {
-		if err := c.MacroDepositAll(s.bank...); err != nil {
+	if len(s.deposit) > 0 {
+		if err := c.MacroDepositAll(s.deposit...); err != nil {
 			return fmt.Errorf("deposit: %w", err)
+		}
+	}
+
+	if s.depositGold {
+		if err := c.MacroDepositGold(c.Data().Gold); err != nil {
+			return fmt.Errorf("deposit gold: %w", err)
 		}
 	}
 
@@ -67,19 +82,32 @@ func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	return s.craftHelper(c)
+	bankItems, err := c.Bank().Items()
+	if err != nil {
+		return fmt.Errorf("list bank items: %w", err)
+	}
+
+	for _, itemCode := range s.craft {
+		item, err := c.GetItem(itemCode, true)
+		if err != nil {
+			return fmt.Errorf("get item: %w", err)
+		}
+
+		if !item.Craft.Set {
+			c.Logger().Warn("item " + itemCode + " is not craftable!")
+			continue
+		}
+
+		if s.canCraft(c, item.Craft.Value.CraftSchema.Items, bankItems) {
+			return s.craftHelper(c, item)
+		}
+	}
+
+	time.Sleep(1 * time.Second)
+	return nil
 }
 
-func (s *SimpleCraftStrategy) craftHelper(c *generic.Character) error {
-	item, err := c.GetItem(s.craft, true)
-	if err != nil {
-		return fmt.Errorf("get item: %w", err)
-	}
-
-	if !item.Craft.Set {
-		return fmt.Errorf("item is not craftable")
-	}
-
+func (s *SimpleCraftStrategy) craftHelper(c *generic.Character, item oas.SingleItemSchemaItem) error {
 	ingridients := item.Craft.Value.CraftSchema.Items
 
 	// main craft logic
@@ -117,14 +145,40 @@ func (s *SimpleCraftStrategy) craftHelper(c *generic.Character) error {
 				if err := c.MacroWithdraw(ing.Code, withdraw); err != nil {
 					return fmt.Errorf("withdraw: %w", err)
 				}
+			} else if withdraw < 0 {
+				if err := c.MacroDeposit(ing.Code, -withdraw); err != nil {
+					return fmt.Errorf("deposit: %w", err)
+				}
 			}
 		}
 
-		if err := c.MacroCraft(s.craft, trueCount); err != nil {
+		if err := c.MacroCraft(item.Code, trueCount); err != nil {
 			return fmt.Errorf("craft: %w", err)
 		}
+
+		return nil
 	}
 
 	time.Sleep(1 * time.Second)
 	return nil
+}
+
+func (s *SimpleCraftStrategy) canCraft(c *generic.Character, ingridients []oas.SimpleItemSchema, bank []bank.Item) bool {
+	result := math.MaxInt
+	for _, req := range ingridients {
+		inBank := 0
+		for _, bankItem := range bank {
+			if bankItem.Code == req.Code {
+				inBank = bankItem.Quantity
+				break
+			}
+		}
+
+		q := (inBank + c.InInventory(req.Code)) / req.Quantity
+		if q < result {
+			result = q
+		}
+	}
+
+	return result > 0
 }

@@ -41,10 +41,10 @@ func main() {
 	go events.Update(1 * time.Minute)
 
 	characters := []Character{
-		ishtar.NewCharacter(apiClient, bank, events),
-		cetcalcoatl.NewCharacter(apiClient, bank, events),
-		ereshkigal.NewCharacter(apiClient, bank, events),
-		enkidu.NewCharacter(apiClient, bank, events),
+		ishtar.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
+		cetcalcoatl.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
+		ereshkigal.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
+		enkidu.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
 	}
 
 	ctx, stopNotify := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

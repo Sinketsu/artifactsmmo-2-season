@@ -288,6 +288,36 @@ func (c *Character) Deposit(code string, quantity int) error {
 	}
 }
 
+func (c *Character) DepositGold(quantity int) error {
+	requestCount.Inc()
+
+	res, err := c.cli.ActionDepositBankGoldMyNameActionBankDepositGoldPost(context.Background(), &oas.DepositWithdrawGoldSchema{Quantity: quantity}, oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostParams{Name: c.name})
+	if err != nil {
+		return err
+	}
+
+	switch v := res.(type) {
+	case *oas.BankGoldTransactionResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return c.updateData(unsafe.Pointer(&v.Data.Character))
+	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode461:
+		return fmt.Errorf("transaction is already in progress with this item/your golds in your bank")
+	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode486:
+		return fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode492:
+		return fmt.Errorf("insufficient gold")
+	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode498:
+		return fmt.Errorf("character not found")
+	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode499:
+		return fmt.Errorf("cooldown")
+	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode598:
+		return fmt.Errorf("bank not at this map tile")
+	default:
+		return fmt.Errorf("unknown answer type")
+	}
+}
+
 func (c *Character) FindOnMap(code string, cachable bool) (oas.MapSchema, error) {
 	if cachable {
 		if tile, ok := c.mapsCache[code]; ok {

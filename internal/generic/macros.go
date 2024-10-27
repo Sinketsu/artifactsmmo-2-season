@@ -2,6 +2,7 @@ package generic
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 
 	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
@@ -13,7 +14,12 @@ func (c *Character) MacroWithdraw(code string, quantity int) error {
 		return fmt.Errorf("move: %w", err)
 	}
 
-	return c.Withdraw(code, quantity)
+	if err := c.Withdraw(code, quantity); err != nil {
+		return err
+	}
+
+	c.Logger().Info(fmt.Sprintf("withdraw: %d %s", quantity, code))
+	return nil
 }
 
 func (c *Character) MacroSellAll(codes ...string) error {
@@ -31,13 +37,28 @@ func (c *Character) MacroSellAll(codes ...string) error {
 
 			sellCount := int(math.Min(float64(c.InInventory(code)), float64(ge.MaxQuantity)))
 
-			_, err = c.Sell(code, sellCount, ge.SellPrice.Value)
+			price, err := c.Sell(code, sellCount, ge.SellPrice.Value)
 			if err != nil {
 				return fmt.Errorf("sell: %w", err)
 			}
+			c.Logger().With(slog.Int("gold", price)).Info(fmt.Sprintf("sold %d %s", sellCount, code))
 		}
 	}
 
+	return nil
+}
+
+func (c *Character) MacroDeposit(code string, quantity int) error {
+	err := c.Move(4, 1) // Bank
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	if err := c.Deposit(code, quantity); err != nil {
+		return err
+	}
+
+	c.Logger().Info(fmt.Sprintf("deposit: %d %s", quantity, code))
 	return nil
 }
 
@@ -56,35 +77,70 @@ func (c *Character) MacroDepositAll(codes ...string) error {
 		if err := c.Deposit(code, inInventory); err != nil {
 			return fmt.Errorf("deposit: %w", err)
 		}
+		c.Logger().Info(fmt.Sprintf("deposit: %d %s", inInventory, code))
 	}
 
 	return nil
 }
 
-func (c *Character) MacroGather(x, y int) error {
-	err := c.Move(x, y)
+func (c *Character) MacroDepositGold(count int) error {
+	err := c.Move(4, 1) // Bank
 	if err != nil {
 		return fmt.Errorf("move: %w", err)
 	}
 
-	_, err = c.Gather()
+	if err := c.DepositGold(count); err != nil {
+		return err
+	}
+
+	c.Logger().Info(fmt.Sprintf("deposit gold: %d", count))
+	return nil
+}
+
+func (c *Character) MacroGather(resource string, cachable bool) error {
+	tile, err := c.FindOnMap(resource, cachable)
+	if err != nil {
+		return fmt.Errorf("find on map: %w", err)
+	}
+
+	err = c.Move(tile.X, tile.Y)
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	gathered, err := c.Gather()
 	if err != nil {
 		return fmt.Errorf("gather: %w", err)
 	}
 
+	c.Logger().With(
+		slog.Int("xp", gathered.Xp),
+		slog.Any("items", gathered.Items),
+	).Info("gather: " + resource)
 	return nil
 }
 
-func (c *Character) MacroFight(x, y int) error {
-	err := c.Move(x, y)
+func (c *Character) MacroFight(monster string, cachable bool) error {
+	tile, err := c.FindOnMap(monster, cachable)
+	if err != nil {
+		return fmt.Errorf("find on map: %w", err)
+	}
+
+	err = c.Move(tile.X, tile.Y)
 	if err != nil {
 		return fmt.Errorf("move: %w", err)
 	}
 
-	_, err = c.Fight()
+	result, err := c.Fight()
 	if err != nil {
 		return fmt.Errorf("fight: %w", err)
 	}
+	c.Logger().With(
+		slog.Int("xp", result.Xp),
+		slog.Int("gold", result.Gold),
+		slog.Any("items", result.Drops),
+		slog.Int("turns", result.Turns),
+	).Info("fight: " + monster)
 
 	return nil
 }
@@ -126,10 +182,11 @@ func (c *Character) MacroCraft(code string, quantity int) error {
 		return fmt.Errorf("move: %w", err)
 	}
 
-	_, err = c.Craft(code, quantity)
+	crafted, err := c.Craft(code, quantity)
 	if err != nil {
 		return fmt.Errorf("craft: %w", err)
 	}
+	c.Logger().With(slog.Int("xp", crafted.Xp), slog.Any("items", crafted.Items)).Info(fmt.Sprintf("craft: %d %s", quantity, code))
 
 	return nil
 }
@@ -155,10 +212,11 @@ func (c *Character) MacroRecycleAll(codes ...string) error {
 			return fmt.Errorf("move: %w", err)
 		}
 
-		_, err = c.Recycle(code, inInventory)
+		items, err := c.Recycle(code, inInventory)
 		if err != nil {
 			return fmt.Errorf("recycle: %w", err)
 		}
+		c.Logger().With(slog.Any("items", items)).Info(fmt.Sprintf("recycle: %d %s", inInventory, code))
 	}
 
 	return nil
@@ -214,19 +272,23 @@ func (c *Character) MacroWear(items []oas.SingleItemSchemaItem) error {
 			if err := c.UnEquip(current, slot, 1); err != nil {
 				return fmt.Errorf("unequip: %w", err)
 			}
+			c.Logger().Info("unequip: " + current)
 
 			if err := c.Deposit(current, 1); err != nil {
 				return fmt.Errorf("deposit: %w", err)
 			}
+			c.Logger().Info(fmt.Sprintf("deposit: %d %s", 1, current))
 		}
 
 		if err := c.Withdraw(item.Code, 1); err != nil {
 			return fmt.Errorf("withdraw: %w", err)
 		}
+		c.Logger().Info(fmt.Sprintf("withdraw: %d %s", 1, item.Code))
 
 		if err := c.Equip(item.Code, slot, 1); err != nil {
 			return err
 		}
+		c.Logger().Info("equip: " + item.Code)
 	}
 
 	return nil
@@ -243,7 +305,7 @@ func (c *Character) MacroCompleteMonsterTask() error {
 		return fmt.Errorf("complete task: %w", err)
 	}
 
-	c.Log("completed task, got", reward.Quantity, reward.Code)
+	c.Logger().With(slog.Int(reward.Code, reward.Quantity)).Info("complete task")
 	return nil
 }
 
@@ -258,7 +320,7 @@ func (c *Character) MacroNewMonsterTask() error {
 		return fmt.Errorf("complete task: %w", err)
 	}
 
-	c.Log("accept new task:", task.Total, task.Code)
+	c.Logger().With(slog.Int(task.Code, task.Total)).Info("accept new task")
 	return nil
 }
 
@@ -268,11 +330,13 @@ func (c *Character) MacroCancelMonsterTask() error {
 		return fmt.Errorf("move: %w", err)
 	}
 
+	task := c.Data().Task
+
 	err = c.CancelTask()
 	if err != nil {
 		return fmt.Errorf("cancel task: %w", err)
 	}
 
-	c.Log("cancelled task")
+	c.Logger().With(slog.String("task", task)).Warn("cancel task")
 	return nil
 }

@@ -3,41 +3,71 @@ package generic
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
-	"strings"
 
 	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 	combinations "github.com/mxschmitt/golang-combinations"
 )
 
-func gearCombinations(idx int, all ...[][]oas.SingleItemSchemaItem) [][]oas.SingleItemSchemaItem {
-	result := make([][]oas.SingleItemSchemaItem, 0)
+func gearCombinations(f func(items []oas.SingleItemSchemaItem), weaponCombinations, bodyArmorCombinations, legsArmorCombinations,
+	shieldCombinations, amuletCombinations, bootsCombinations, ringsCombinations, helmetCombinations [][]oas.SingleItemSchemaItem) {
 
-	if idx == len(all)-1 {
-		return all[idx]
+	var items = make([]oas.SingleItemSchemaItem, 9)
+	var empty = [][]oas.SingleItemSchemaItem{{{}}}
+
+	if len(weaponCombinations) == 0 {
+		weaponCombinations = empty
+	}
+	if len(bodyArmorCombinations) == 0 {
+		bodyArmorCombinations = empty
+	}
+	if len(legsArmorCombinations) == 0 {
+		legsArmorCombinations = empty
+	}
+	if len(shieldCombinations) == 0 {
+		shieldCombinations = empty
+	}
+	if len(amuletCombinations) == 0 {
+		amuletCombinations = empty
+	}
+	if len(bootsCombinations) == 0 {
+		bootsCombinations = empty
+	}
+	if len(ringsCombinations) == 0 {
+		ringsCombinations = empty
+	}
+	if len(helmetCombinations) == 0 {
+		helmetCombinations = empty
 	}
 
-	if len(all[idx]) == 0 {
-		return gearCombinations(idx+1, all...)
-	}
+	for _, weapon := range weaponCombinations {
+		for _, bodyArmor := range bodyArmorCombinations {
+			for _, legArmor := range legsArmorCombinations {
+				for _, shield := range shieldCombinations {
+					for _, amulet := range amuletCombinations {
+						for _, boots := range bootsCombinations {
+							for _, ringSet := range ringsCombinations {
+								for _, helmet := range helmetCombinations {
+									items[0] = weapon[0]
+									items[1] = bodyArmor[0]
+									items[2] = legArmor[0]
+									items[3] = shield[0]
+									items[4] = amulet[0]
+									items[5] = boots[0]
+									items[6] = ringSet[0]
+									items[7] = ringSet[1]
+									items[8] = helmet[0]
 
-	for _, slotCombinations := range all[idx] {
-		remainingSet := gearCombinations(idx+1, all...)
-		if len(remainingSet) == 0 {
-			result = append(result, slotCombinations)
-			continue
+									f(items)
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-
-		for _, other := range remainingSet {
-			newSet := []oas.SingleItemSchemaItem{}
-			newSet = append(newSet, slotCombinations...)
-			newSet = append(newSet, other...)
-
-			result = append(result, newSet)
-		}
 	}
-
-	return result
 }
 
 func (c *Character) GetBestGearFor(monsterCode string) ([]oas.SingleItemSchemaItem, error) {
@@ -68,20 +98,47 @@ func (c *Character) GetBestGearFor(monsterCode string) ([]oas.SingleItemSchemaIt
 
 		switch item.Type {
 		case "weapon":
+			if item.Code == c.data.WeaponSlot {
+				continue
+			}
+			if item.Subtype == "tool" {
+				continue
+			}
 			weapons = append(weapons, item)
 		case "helmet":
+			if item.Code == c.data.HelmetSlot {
+				continue
+			}
 			helmets = append(helmets, item)
 		case "shield":
+			if item.Code == c.data.ShieldSlot {
+				continue
+			}
 			shields = append(shields, item)
 		case "body_armor":
+			if item.Code == c.data.BodyArmorSlot {
+				continue
+			}
 			bodyArmors = append(bodyArmors, item)
 		case "leg_armor":
+			if item.Code == c.data.LegArmorSlot {
+				continue
+			}
 			legsArmors = append(legsArmors, item)
 		case "boots":
+			if item.Code == c.data.BootsSlot {
+				continue
+			}
 			boots = append(boots, item)
 		case "ring":
+			if item.Code == c.data.Ring1Slot || item.Code == c.data.Ring2Slot {
+				continue
+			}
 			rings = append(rings, item)
 		case "amulet":
+			if item.Code == c.data.AmuletSlot {
+				continue
+			}
 			amulets = append(amulets, item)
 		}
 	}
@@ -162,13 +219,10 @@ func (c *Character) GetBestGearFor(monsterCode string) ([]oas.SingleItemSchemaIt
 	bestScore := 0.0
 	bestGear := []oas.SingleItemSchemaItem{}
 
-	setCombinations := gearCombinations(0, weaponCombinations, bodyArmorCombinations, legsArmorCombinations,
-		shieldCombinations, amuletCombinations, bootsCombinations, ringsCombinations, helmetCombinations)
-
-	for _, combination := range setCombinations {
+	gearCombinations(func(items []oas.SingleItemSchemaItem) {
 		totalEffects := make(map[string]int)
 
-		for _, item := range combination {
+		for _, item := range items {
 			for _, e := range item.Effects {
 				totalEffects[e.Name] += e.Value
 			}
@@ -177,18 +231,20 @@ func (c *Character) GetBestGearFor(monsterCode string) ([]oas.SingleItemSchemaIt
 		score := float64(totalEffects["attack_earth"])*(1-float64(monster.ResEarth)/100)*(1+float64(totalEffects["dmg_earth"])/100) +
 			float64(totalEffects["attack_water"])*(1-float64(monster.ResWater)/100)*(1+float64(totalEffects["dmg_water"])/100) +
 			float64(totalEffects["attack_fire"])*(1-float64(monster.ResFire)/100)*(1+float64(totalEffects["dmg_fire"])/100) +
-			float64(totalEffects["attack_air"])*(1-float64(monster.ResAir)/100)*(1+float64(totalEffects["dmg_air"])/100)
+			float64(totalEffects["attack_air"])*(1-float64(monster.ResAir)/100)*(1+float64(totalEffects["dmg_air"])/100) +
+			float64(totalEffects["haste"])
 		if score > bestScore {
 			bestScore = score
-			bestGear = combination
+			bestGear = slices.Clone(items)
 		}
-	}
+	}, weaponCombinations, bodyArmorCombinations, legsArmorCombinations,
+		shieldCombinations, amuletCombinations, bootsCombinations, ringsCombinations, helmetCombinations)
 
 	bestGearCodes := make([]string, 0, len(bestGear))
 	for _, gear := range bestGear {
 		bestGearCodes = append(bestGearCodes, gear.Code)
 	}
-	c.Log("found best gear for monster", monster.Code, "with effective dmg:", bestScore, "[", strings.Join(bestGearCodes, ", "), "]")
+	c.Logger().With(slog.Any("gear", bestGearCodes), slog.Float64("effective_damage", bestScore)).Info("selected best gear for monster: " + monsterCode)
 
 	return bestGear, nil
 }
@@ -241,8 +297,7 @@ func (c *Character) GetBestGatherGearFor(resourceCode string) ([]oas.SingleItemS
 
 		return aEffect - bEffect
 	})
-
-	c.Log("found best gear for resource", resource.Code, ":", tools[0].Code)
+	c.Logger().With(slog.Any("gear", []string{tools[0].Code})).Info("selected best gear for resource: " + resource.Code)
 
 	return []oas.SingleItemSchemaItem{tools[0]}, nil
 }

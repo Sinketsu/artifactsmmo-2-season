@@ -3,12 +3,14 @@ package generic
 import (
 	"context"
 	"fmt"
-	"time"
+	"log/slog"
 	"unsafe"
 
 	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 	"github.com/Sinketsu/artifactsmmo/internal/api"
 	"github.com/Sinketsu/artifactsmmo/internal/bank"
+	ycloggingslog "github.com/Sinketsu/yc-logging-slog"
+	ycsdk "github.com/yandex-cloud/go-sdk"
 )
 
 // Bank is not thread safe - so you need to explicit call Lock() and Unlock()
@@ -24,6 +26,11 @@ type Events interface {
 
 type Params struct {
 	Name string
+}
+
+type LogOptions struct {
+	Group string
+	Token string
 }
 
 type Character struct {
@@ -42,13 +49,26 @@ type Character struct {
 	// cache GetResource
 	resourceCache map[string]oas.ResourceSchema
 
-	cli *api.Client
+	cli    *api.Client
+	logger *slog.Logger
 }
 
-func NewCharacter(client *api.Client, params Params, bank Bank, events Events) (*Character, error) {
+func NewCharacter(client *api.Client, params Params, bank Bank, events Events, logOptions LogOptions) (*Character, error) {
+	logOpts := ycloggingslog.Options{
+		LogGroupId:   logOptions.Group,
+		ResourceType: "character",
+		ResourceId:   params.Name,
+		Credentials:  ycsdk.OAuthToken(logOptions.Token),
+	}
+	logHandler, err := ycloggingslog.New(logOpts)
+	if err != nil {
+		return nil, fmt.Errorf("fail to init logger: %w", err)
+	}
+
 	character := &Character{
-		name: params.Name,
-		cli:  client,
+		name:   params.Name,
+		cli:    client,
+		logger: slog.New(logHandler),
 
 		bank:   bank,
 		events: events,
@@ -94,9 +114,8 @@ func (c *Character) initData() error {
 	}
 }
 
-func (c *Character) Log(msg ...any) {
-	fmt.Print("["+time.Now().Local().Format(time.TimeOnly)+"] ", c.name+": ")
-	fmt.Println(msg...)
+func (c *Character) Logger() *slog.Logger {
+	return c.logger
 }
 
 func (c *Character) updateData(p unsafe.Pointer) error {

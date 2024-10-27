@@ -9,7 +9,8 @@ import (
 
 type tasksFightStrategy struct {
 	sell          []string
-	bank          []string
+	deposit       []string
+	depositGold   bool
 	cancelTasks   []string
 	allowedEvents []string
 
@@ -28,9 +29,15 @@ func (s *tasksFightStrategy) Sell(items ...string) *tasksFightStrategy {
 	return s
 }
 
-// Bank sets items to deposit in Bank when inventory is full
-func (s *tasksFightStrategy) Bank(items ...string) *tasksFightStrategy {
-	s.bank = items
+// Deposit sets items to deposit in Bank when inventory is full
+func (s *tasksFightStrategy) Deposit(items ...string) *tasksFightStrategy {
+	s.deposit = items
+	return s
+}
+
+// DepositGold sets allowment to deposit all gold from inventory
+func (s *tasksFightStrategy) DepositGold() *tasksFightStrategy {
+	s.depositGold = true
 	return s
 }
 
@@ -49,11 +56,17 @@ func (s *tasksFightStrategy) AllowEvents(names ...string) *tasksFightStrategy {
 func (s *tasksFightStrategy) Do(c *generic.Character) error {
 	// we need some space for complete task
 	if c.Data().InventoryMaxItems-c.InventoryItemCount() < 10 || c.EmptyInventorySlots() == 0 {
-		c.Log("inventory is full - going to bank, GE...")
+		c.Logger().Info("inventory is full - going to bank, GE...")
 
-		if len(s.bank) > 0 {
-			if err := c.MacroDepositAll(s.bank...); err != nil {
+		if len(s.deposit) > 0 {
+			if err := c.MacroDepositAll(s.deposit...); err != nil {
 				return fmt.Errorf("deposit: %w", err)
+			}
+		}
+
+		if s.depositGold {
+			if err := c.MacroDepositGold(c.Data().Gold); err != nil {
+				return fmt.Errorf("deposit gold: %w", err)
 			}
 		}
 
@@ -94,11 +107,6 @@ func (s *tasksFightStrategy) Do(c *generic.Character) error {
 }
 
 func (s *tasksFightStrategy) fightHelper(c *generic.Character, code string, cachable bool) error {
-	tile, err := c.FindOnMap(code, cachable)
-	if err != nil {
-		return fmt.Errorf("find on map: %w", err)
-	}
-
 	if s.currentMonster != code {
 		c.Bank().Lock()
 
@@ -117,5 +125,5 @@ func (s *tasksFightStrategy) fightHelper(c *generic.Character, code string, cach
 		s.currentMonster = code
 	}
 
-	return c.MacroFight(tile.X, tile.Y)
+	return c.MacroFight(code, cachable)
 }

@@ -16,8 +16,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
-	gc, err := generic.NewCharacter(client, generic.Params{Name: "Cetcalcoatl"}, bank, events)
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events, logGroup string, logToken string) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Cetcalcoatl"}, bank, events, generic.LogOptions{Group: logGroup, Token: logToken})
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +35,7 @@ func (c *Character) Live(ctx context.Context) {
 		default:
 			err := c.do()
 			if err != nil {
-				c.Log(err)
+				c.Logger().Error(err.Error())
 				time.Sleep(1 * time.Second)
 			}
 		}
@@ -44,23 +44,16 @@ func (c *Character) Live(ctx context.Context) {
 
 func (c *Character) do() error {
 	c.setStrategy(
-		"fishing shrimp for a golden shrimp (allow all events)",
+		"gather coal_rocks",
 		strategy.NewSimpleGatherStrategy().
 			AllowEvents("Strange Apparition", "Magic Apparition").
-			Gather("shrimp_fishing_spot").
-			Sell("shrimp").
-			Bank("golden_shrimp", "sap", "diamond", "strange_ore", "magic_wood", "magic_sap"),
+			Gather("coal_rocks").
+			Deposit("coal", "topaz", "emerald", "ruby", "sapphire", "strange_ore", "diamond", "magic_wood", "magic_sap").
+			DepositGold(),
 	)
 
-	// c.setStrategy(
-	// 	"gather ash wood",
-	// 	strategy.NewSimpleGatherStrategy().
-	// 		AllowEvents(events, "Strange Apparition", "Magic Apparition").
-	// 		Gather("ash_tree").
-	// 		Bank("ash_wood", "ruby", "sapphire", "diamond", "strange_ore", "magic_wood", "magic_sap", "feather", "sap"),
-	// )
+	// c.setStrategy("craft steel", strategy.NewSimpleCraftStrategy().Craft("steel").Bank("steel"))
 
-	// c.setStrategy("craft hardwood_plank", strategy.NewSimpleCraftStrategy().Craft("hardwood_plank").Bank("hardwood_plank"))
 	// c.setStrategy("player control", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
@@ -68,7 +61,7 @@ func (c *Character) do() error {
 
 func (c *Character) setStrategy(what string, newStrategy strategy.Strategy) {
 	if c.what != what {
-		c.Log("change strategy:", what)
+		c.Logger().Info("change strategy: " + what)
 		c.strategy = newStrategy
 		c.what = what
 	}

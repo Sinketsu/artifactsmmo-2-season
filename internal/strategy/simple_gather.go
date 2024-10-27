@@ -9,7 +9,8 @@ import (
 type SimpleGatherStrategy struct {
 	gather        string
 	sell          []string
-	bank          []string
+	deposit       []string
+	depositGold   bool
 	craft         string
 	allowedEvents []string
 
@@ -34,9 +35,15 @@ func (s *SimpleGatherStrategy) Sell(items ...string) *SimpleGatherStrategy {
 	return s
 }
 
-// Bank sets items to deposit in Bank when inventory is full
-func (s *SimpleGatherStrategy) Bank(items ...string) *SimpleGatherStrategy {
-	s.bank = items
+// Deposit sets items to deposit in Bank when inventory is full
+func (s *SimpleGatherStrategy) Deposit(items ...string) *SimpleGatherStrategy {
+	s.deposit = items
+	return s
+}
+
+// DepositGold sets allowment to deposit all gold from inventory
+func (s *SimpleGatherStrategy) DepositGold() *SimpleGatherStrategy {
+	s.depositGold = true
 	return s
 }
 
@@ -58,7 +65,7 @@ func (s *SimpleGatherStrategy) Do(c *generic.Character) error {
 	}
 
 	if c.InventoryIsFull() {
-		c.Log("inventory is full - going to craft, bank, GE...")
+		c.Logger().Info("inventory is full - going to craft, bank, GE...")
 
 		if s.craft != "" {
 			q, err := c.MacroCheckCraftResources(s.craft)
@@ -73,9 +80,15 @@ func (s *SimpleGatherStrategy) Do(c *generic.Character) error {
 			}
 		}
 
-		if len(s.bank) > 0 {
-			if err := c.MacroDepositAll(s.bank...); err != nil {
+		if len(s.deposit) > 0 {
+			if err := c.MacroDepositAll(s.deposit...); err != nil {
 				return fmt.Errorf("deposit: %w", err)
+			}
+		}
+
+		if s.depositGold {
+			if err := c.MacroDepositGold(c.Data().Gold); err != nil {
+				return fmt.Errorf("deposit gold: %w", err)
 			}
 		}
 
@@ -96,11 +109,6 @@ func (s *SimpleGatherStrategy) Do(c *generic.Character) error {
 }
 
 func (s *SimpleGatherStrategy) gatherHelper(c *generic.Character, code string, cachable bool) error {
-	tile, err := c.FindOnMap(code, cachable)
-	if err != nil {
-		return fmt.Errorf("find on map: %w", err)
-	}
-
 	if s.currentResource != code {
 		c.Bank().Lock()
 
@@ -120,5 +128,5 @@ func (s *SimpleGatherStrategy) gatherHelper(c *generic.Character, code string, c
 		s.currentResource = code
 	}
 
-	return c.MacroGather(tile.X, tile.Y)
+	return c.MacroGather(code, cachable)
 }

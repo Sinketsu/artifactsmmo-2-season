@@ -2,6 +2,7 @@ package enkidu
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/Sinketsu/artifactsmmo/internal/api"
@@ -16,8 +17,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
-	gc, err := generic.NewCharacter(client, generic.Params{Name: "Enkidu"}, bank, events)
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events, logGroup string, logToken string) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Enkidu"}, bank, events, generic.LogOptions{Group: logGroup, Token: logToken})
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +36,7 @@ func (c *Character) Live(ctx context.Context) {
 		default:
 			err := c.do()
 			if err != nil {
-				c.Log(err)
+				c.Logger().Error(err.Error())
 				time.Sleep(1 * time.Second)
 			}
 		}
@@ -43,23 +44,38 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	if c.Data().WeaponcraftingLevel < 35 {
-		c.setStrategy(
-			"craft gold_sword for up skill",
-			strategy.NewSimpleCraftStrategy().
-				Craft("gold_sword").
-				Recycle("gold_sword"),
-		)
+	items := []string{}
+
+	if c.Data().GearcraftingLevel >= 20 && c.Data().GearcraftingLevel < 25 {
+		items = append(items, "magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor", "steel_legs_armor",
+			"skeleton_pants", "skeleton_armor", "skeleton_helmet", "serpent_skin_legs_armor", "steel_shield",
+			"tromatising_mask", "serpent_skin_armor")
 	}
 
-	// c.setStrategy("waiting for resources...", strategy.EmptyStrategy())
+	if c.Data().GearcraftingLevel >= 25 && c.Data().GearcraftingLevel < 30 {
+		items = append(items, "lizard_skin_armor", "lizard_skin_legs_armor", "piggy_pants")
+	}
+
+	if c.Data().JewelrycraftingLevel >= 20 && c.Data().JewelrycraftingLevel < 25 {
+		items = append(items, "ring_of_chance", "dreadful_ring", "steel_ring", "skull_ring", "dreadful_amulet",
+			"skull_amulet")
+	}
+
+	c.setStrategy(
+		"craft something of: "+strings.Join(items, ", "),
+		strategy.NewSimpleCraftStrategy().
+			Craft(items...).
+			Recycle(items...),
+	)
+
+	// c.setStrategy("player control", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
 }
 
 func (c *Character) setStrategy(what string, newStrategy strategy.Strategy) {
 	if c.what != what {
-		c.Log("change strategy:", what)
+		c.Logger().Info("change strategy: " + what)
 		c.strategy = newStrategy
 		c.what = what
 	}

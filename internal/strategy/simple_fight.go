@@ -9,7 +9,8 @@ import (
 type SimpleFightStrategy struct {
 	fight         string
 	sell          []string
-	bank          []string
+	deposit       []string
+	depositGold   bool
 	allowedEvents []string
 
 	// cache state for current monster
@@ -33,9 +34,15 @@ func (s *SimpleFightStrategy) Sell(items ...string) *SimpleFightStrategy {
 	return s
 }
 
-// Bank sets items to deposit in Bank when inventory is full
-func (s *SimpleFightStrategy) Bank(items ...string) *SimpleFightStrategy {
-	s.bank = items
+// Deposit sets items to deposit in Bank when inventory is full
+func (s *SimpleFightStrategy) Deposit(items ...string) *SimpleFightStrategy {
+	s.deposit = items
+	return s
+}
+
+// DepositGold sets allowment to deposit all gold from inventory
+func (s *SimpleFightStrategy) DepositGold() *SimpleFightStrategy {
+	s.depositGold = true
 	return s
 }
 
@@ -51,11 +58,17 @@ func (s *SimpleFightStrategy) Do(c *generic.Character) error {
 	}
 
 	if c.InventoryItemCount() == c.Data().InventoryMaxItems {
-		c.Log("inventory is full - going to bank, GE...")
+		c.Logger().Info("inventory is full - going to bank, GE...")
 
-		if len(s.bank) > 0 {
-			if err := c.MacroDepositAll(s.bank...); err != nil {
+		if len(s.deposit) > 0 {
+			if err := c.MacroDepositAll(s.deposit...); err != nil {
 				return fmt.Errorf("deposit: %w", err)
+			}
+		}
+
+		if s.depositGold {
+			if err := c.MacroDepositGold(c.Data().Gold); err != nil {
+				return fmt.Errorf("deposit gold: %w", err)
 			}
 		}
 
@@ -76,11 +89,6 @@ func (s *SimpleFightStrategy) Do(c *generic.Character) error {
 }
 
 func (s *SimpleFightStrategy) fightHelper(c *generic.Character, code string, cachable bool) error {
-	tile, err := c.FindOnMap(code, cachable)
-	if err != nil {
-		return fmt.Errorf("find on map: %w", err)
-	}
-
 	if s.currentMonster != code {
 		c.Bank().Lock()
 
@@ -99,5 +107,5 @@ func (s *SimpleFightStrategy) fightHelper(c *generic.Character, code string, cac
 		s.currentMonster = code
 	}
 
-	return c.MacroFight(tile.X, tile.Y)
+	return c.MacroFight(code, cachable)
 }

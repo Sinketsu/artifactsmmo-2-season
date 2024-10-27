@@ -16,8 +16,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
-	gc, err := generic.NewCharacter(client, generic.Params{Name: "Ereshkigal"}, bank, events)
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events, logGroup string, logToken string) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Ereshkigal"}, bank, events, generic.LogOptions{Group: logGroup, Token: logToken})
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +35,7 @@ func (c *Character) Live(ctx context.Context) {
 		default:
 			err := c.do()
 			if err != nil {
-				c.Log(err)
+				c.Logger().Error(err.Error())
 				time.Sleep(1 * time.Second)
 			}
 		}
@@ -46,10 +46,11 @@ func (c *Character) do() error {
 	c.setStrategy(
 		"do monster tasks",
 		strategy.NewTasksFightStrategy().
-			Bank("owlbear_hair", "golden_egg", "red_cloth", "skeleton_bone", "skeleton_skull",
+			Deposit("owlbear_hair", "golden_egg", "red_cloth", "skeleton_bone", "skeleton_skull",
 				"vampire_blood", "flying_wing", "serpent_skin", "ogre_eye", "ogre_skin",
 				"bandit_armor", "demon_horn", "piece_of_obsidian", "magic_stone", "cursed_book",
 				"demoniac_dust", "piece_of_obsidian").
+			DepositGold().
 			Sell("mushroom", "red_slimeball", "yellow_slimeball", "blue_slimeball", "green_slimeball",
 				"raw_beef", "milk_bucket", "cowhide", "raw_wolf_meat", "wolf_bone", "wolf_hair",
 				"raw_chicken", "egg", "feather", "pig_skin", "lizard_skin").
@@ -58,13 +59,12 @@ func (c *Character) do() error {
 	)
 
 	// c.setStrategy(
-	// 	"fight skeleton for resources",
+	// 	"fight death knight for resources",
 	// 	strategy.NewSimpleFightStrategy().
-	// 		Fight("skeleton").
-	// 		Bank("skeleton_bone", "skeleton_skull"),
+	// 		Fight("death_knight").
+	// 		Bank("red_cloth", "death_knight_sword", "tasks_coin"),
 	// )
 
-	// c.setStrategy("spend task coins", strategy.EmptyStrategy())
 	// c.setStrategy("player control", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
@@ -72,7 +72,7 @@ func (c *Character) do() error {
 
 func (c *Character) setStrategy(what string, newStrategy strategy.Strategy) {
 	if c.what != what {
-		c.Log("change strategy:", what)
+		c.Logger().Info("change strategy: " + what)
 		c.strategy = newStrategy
 		c.what = what
 	}

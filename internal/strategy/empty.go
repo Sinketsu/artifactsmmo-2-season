@@ -1,6 +1,8 @@
 package strategy
 
 import (
+	"time"
+
 	"github.com/Sinketsu/artifactsmmo/internal/generic"
 )
 
@@ -12,9 +14,6 @@ func EmptyStrategy() *emptyStrategy {
 }
 
 func (s *emptyStrategy) Do(c *generic.Character) error {
-	return nil
-}
-
-func (s *emptyStrategy) DoTasks(c *generic.Character) error {
+	time.Sleep(1 * time.Second)
 	return nil
 }
