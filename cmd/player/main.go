@@ -29,6 +29,7 @@ func main() {
 	logHandler, err := ycloggingslog.New(ycloggingslog.Options{
 		LogGroupId:   os.Getenv("LOGGING_GROUP_ID"),
 		ResourceType: "app",
+		ResourceId:   "season-2",
 		Credentials:  ycsdk.OAuthToken(os.Getenv("LOGGING_TOKEN")),
 	})
 	if err != nil {
