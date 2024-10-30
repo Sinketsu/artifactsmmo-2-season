@@ -16,8 +16,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events, logGroup string, logToken string) *Character {
-	gc, err := generic.NewCharacter(client, generic.Params{Name: "Cetcalcoatl"}, bank, events, generic.LogOptions{Group: logGroup, Token: logToken})
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Cetcalcoatl"}, bank, events)
 	if err != nil {
 		panic(err)
 	}
@@ -43,12 +43,21 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
+	// c.setStrategy(
+	// 	"gather iron_rocks",
+	// 	strategy.NewSimpleGatherStrategy().
+	// 		AllowEvents("Strange Apparition", "Magic Apparition").
+	// 		Gather("iron_rocks").
+	// 		Craft("iron").
+	// 		DepositGold().
+	// 		Deposit("iron", "topaz", "emerald", "ruby", "sapphire", "strange_ore", "diamond", "magic_wood", "magic_sap"),
+	// )
 	c.setStrategy(
-		"gather coal_rocks",
-		strategy.NewSimpleGatherStrategy().
-			AllowEvents("Strange Apparition", "Magic Apparition").
-			Gather("coal_rocks").
-			Deposit("coal", "topaz", "emerald", "ruby", "sapphire", "strange_ore", "diamond", "magic_wood", "magic_sap").
+		"fight skeleton",
+		strategy.NewSimpleFightStrategy().
+			Fight("skeleton").
+			Deposit("skeleton_bone").
+			Sell("skeleton_skull").
 			DepositGold(),
 	)
 

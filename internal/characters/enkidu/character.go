@@ -17,8 +17,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events, logGroup string, logToken string) *Character {
-	gc, err := generic.NewCharacter(client, generic.Params{Name: "Enkidu"}, bank, events, generic.LogOptions{Group: logGroup, Token: logToken})
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Enkidu"}, bank, events)
 	if err != nil {
 		panic(err)
 	}
@@ -46,17 +46,17 @@ func (c *Character) Live(ctx context.Context) {
 func (c *Character) do() error {
 	items := []string{}
 
-	if c.Data().GearcraftingLevel >= 20 && c.Data().GearcraftingLevel < 25 {
-		items = append(items, "magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor", "steel_legs_armor",
-			"skeleton_pants", "skeleton_armor", "skeleton_helmet", "serpent_skin_legs_armor", "steel_shield",
-			"tromatising_mask", "serpent_skin_armor")
-	}
+	// if c.Data().GearcraftingLevel >= 20 && c.Data().GearcraftingLevel <= 30 {
+	// 	items = append(items, "magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor", "steel_legs_armor",
+	// 		"skeleton_pants", "skeleton_armor", "skeleton_helmet", "serpent_skin_legs_armor", "steel_shield",
+	// 		"tromatising_mask", "serpent_skin_armor")
+	// }
 
-	if c.Data().GearcraftingLevel >= 25 && c.Data().GearcraftingLevel < 30 {
-		items = append(items, "lizard_skin_armor", "lizard_skin_legs_armor", "piggy_pants")
-	}
+	// if c.Data().GearcraftingLevel >= 25 && c.Data().GearcraftingLevel <= 30 {
+	// 	items = append(items, "lizard_skin_armor", "lizard_skin_legs_armor", "piggy_pants")
+	// }
 
-	if c.Data().JewelrycraftingLevel >= 20 && c.Data().JewelrycraftingLevel < 25 {
+	if c.Data().JewelrycraftingLevel >= 20 && c.Data().JewelrycraftingLevel <= 30 {
 		items = append(items, "ring_of_chance", "dreadful_ring", "steel_ring", "skull_ring", "dreadful_amulet",
 			"skull_amulet")
 	}
@@ -64,6 +64,16 @@ func (c *Character) do() error {
 	c.setStrategy(
 		"craft something of: "+strings.Join(items, ", "),
 		strategy.NewSimpleCraftStrategy().
+			WithdrawGold().
+			Buy(map[string]int{
+				"iron":           500,
+				"wolf_bone":      600,
+				"skeleton_bone":  500,
+				"serpent_skin":   500,
+				"cowhide":        500,
+				"hardwood_plank": 500,
+				"flying_wing":    500,
+			}).
 			Craft(items...).
 			Recycle(items...),
 	)

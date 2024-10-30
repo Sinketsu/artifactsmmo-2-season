@@ -97,6 +97,20 @@ func (c *Character) MacroDepositGold(count int) error {
 	return nil
 }
 
+func (c *Character) MacroWithdrawGold(count int) error {
+	err := c.Move(4, 1) // Bank
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	if err := c.WithdrawGold(count); err != nil {
+		return err
+	}
+
+	c.Logger().Info(fmt.Sprintf("withdraw gold: %d", count))
+	return nil
+}
+
 func (c *Character) MacroGather(resource string, cachable bool) error {
 	tile, err := c.FindOnMap(resource, cachable)
 	if err != nil {
@@ -188,6 +202,21 @@ func (c *Character) MacroCraft(code string, quantity int) error {
 	}
 	c.Logger().With(slog.Int("xp", crafted.Xp), slog.Any("items", crafted.Items)).Info(fmt.Sprintf("craft: %d %s", quantity, code))
 
+	return nil
+}
+
+func (c *Character) MacroBuy(code string, quantity int, price int) error {
+	err := c.Move(5, 1) // Grand Exchange
+	if err != nil {
+		return fmt.Errorf("move: %w", err)
+	}
+
+	gold, err := c.Buy(code, quantity, price)
+	if err != nil {
+		return fmt.Errorf("buy: %w", err)
+	}
+
+	c.Logger().With(slog.Int("total", gold)).Info(fmt.Sprintf("buy: %d %s", quantity, code))
 	return nil
 }
 

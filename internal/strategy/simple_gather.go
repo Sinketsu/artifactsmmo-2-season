@@ -86,7 +86,7 @@ func (s *SimpleGatherStrategy) Do(c *generic.Character) error {
 			}
 		}
 
-		if s.depositGold {
+		if c.Data().Gold > 0 && s.depositGold {
 			if err := c.MacroDepositGold(c.Data().Gold); err != nil {
 				return fmt.Errorf("deposit gold: %w", err)
 			}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -17,7 +16,9 @@ import (
 	"github.com/Sinketsu/artifactsmmo/internal/characters/ereshkigal"
 	"github.com/Sinketsu/artifactsmmo/internal/characters/ishtar"
 	"github.com/Sinketsu/artifactsmmo/internal/events"
+	ycloggingslog "github.com/Sinketsu/yc-logging-slog"
 	ycmonitoringgo "github.com/Sinketsu/yc-monitoring-go"
+	ycsdk "github.com/yandex-cloud/go-sdk"
 )
 
 type Character interface {
@@ -25,30 +26,40 @@ type Character interface {
 }
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
-	monitoringClient := ycmonitoringgo.NewClient(os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN"), ycmonitoringgo.WithLogger(logger))
+	logHandler, err := ycloggingslog.New(ycloggingslog.Options{
+		LogGroupId:   os.Getenv("LOGGING_GROUP_ID"),
+		ResourceType: "app",
+		Credentials:  ycsdk.OAuthToken(os.Getenv("LOGGING_TOKEN")),
+	})
+	if err != nil {
+		slog.With(slog.Any("error", err)).Error("fail to init log handler")
+		os.Exit(1)
+	}
+	slog.SetDefault(slog.New(logHandler))
 
 	apiClient, err := api.NewClient(api.Params{
 		ServerUrl:   os.Getenv("SERVER_URL"),
 		ServerToken: os.Getenv("SERVER_TOKEN"),
 	})
 	if err != nil {
-		panic(err)
+		slog.With(slog.Any("error", err)).Error("fail to init API client")
+		os.Exit(1)
 	}
 
 	bank := bank.New(apiClient)
 	events := events.New(apiClient)
-	go events.Update(1 * time.Minute)
+	monitoringClient := ycmonitoringgo.NewClient(os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN"), ycmonitoringgo.WithLogger(slog.Default()))
 
 	characters := []Character{
-		ishtar.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
-		cetcalcoatl.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
-		ereshkigal.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
-		enkidu.NewCharacter(apiClient, bank, events, os.Getenv("LOGGING_GROUP_ID"), os.Getenv("LOGGING_TOKEN")),
+		ishtar.NewCharacter(apiClient, bank, events),
+		cetcalcoatl.NewCharacter(apiClient, bank, events),
+		ereshkigal.NewCharacter(apiClient, bank, events),
+		enkidu.NewCharacter(apiClient, bank, events),
 	}
 
 	ctx, stopNotify := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
+	go events.Update(ctx, 1*time.Minute)
 	go monitoringClient.Run(ctx, ycmonitoringgo.DefaultRegistry, 30*time.Second)
 
 	wg := &sync.WaitGroup{}
@@ -61,7 +72,7 @@ func main() {
 	}
 
 	<-ctx.Done()
-	fmt.Println("got stop signal...")
+	slog.Info("got stop signal...")
 
 	stopNotify()
 	wg.Wait()

@@ -108,6 +108,44 @@ func (c *Character) Sell(code string, quantity int, price int) (int, error) {
 	}
 }
 
+func (c *Character) Buy(code string, quantity int, price int) (int, error) {
+	requestCount.Inc()
+
+	res, err := c.cli.ActionGeBuyItemMyNameActionGeBuyPost(context.Background(), &oas.GETransactionItemSchema{Code: code, Quantity: quantity, Price: price}, oas.ActionGeBuyItemMyNameActionGeBuyPostParams{Name: c.name})
+	if err != nil {
+		return 0, err
+	}
+
+	switch v := res.(type) {
+	case *oas.GETransactionResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return v.Data.Transaction.TotalPrice, c.updateData(unsafe.Pointer(&v.Data.Character))
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode479:
+		return 0, fmt.Errorf("can't buy or sell that many items at the same time")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode480:
+		return 0, fmt.Errorf("no stock for this item")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode482:
+		return 0, fmt.Errorf("no item at this price")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode483:
+		return 0, fmt.Errorf("transaction is already in progress on this item by a another character")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode486:
+		return 0, fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode492:
+		return 0, fmt.Errorf("insufficient gold")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode497:
+		return 0, fmt.Errorf("inventory is full")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode498:
+		return 0, fmt.Errorf("character not found")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode499:
+		return 0, fmt.Errorf("cooldown")
+	case *oas.ActionGeBuyItemMyNameActionGeBuyPostCode598:
+		return 0, fmt.Errorf("GE not at this map tile")
+	default:
+		return 0, fmt.Errorf("unknown answer type")
+	}
+}
+
 func (c *Character) GetGEItem(code string) (oas.GEItemSchema, error) {
 	requestCount.Inc()
 
@@ -312,6 +350,36 @@ func (c *Character) DepositGold(quantity int) error {
 	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode499:
 		return fmt.Errorf("cooldown")
 	case *oas.ActionDepositBankGoldMyNameActionBankDepositGoldPostCode598:
+		return fmt.Errorf("bank not at this map tile")
+	default:
+		return fmt.Errorf("unknown answer type")
+	}
+}
+
+func (c *Character) WithdrawGold(quantity int) error {
+	requestCount.Inc()
+
+	res, err := c.cli.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(context.Background(), &oas.DepositWithdrawGoldSchema{Quantity: quantity}, oas.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostParams{Name: c.name})
+	if err != nil {
+		return err
+	}
+
+	switch v := res.(type) {
+	case *oas.BankGoldTransactionResponseSchema:
+		time.Sleep(time.Duration(v.Data.Cooldown.RemainingSeconds) * time.Second)
+
+		return c.updateData(unsafe.Pointer(&v.Data.Character))
+	case *oas.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostCode460:
+		return fmt.Errorf("insufficient gold")
+	case *oas.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostCode461:
+		return fmt.Errorf("transaction is already in progress with this item/your golds in your bank")
+	case *oas.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostCode486:
+		return fmt.Errorf("action is already in progress by your character")
+	case *oas.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostCode498:
+		return fmt.Errorf("character not found")
+	case *oas.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostCode499:
+		return fmt.Errorf("cooldown")
+	case *oas.ActionWithdrawBankGoldMyNameActionBankWithdrawGoldPostCode598:
 		return fmt.Errorf("bank not at this map tile")
 	default:
 		return fmt.Errorf("unknown answer type")

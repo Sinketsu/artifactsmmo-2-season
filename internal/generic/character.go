@@ -9,8 +9,6 @@ import (
 	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 	"github.com/Sinketsu/artifactsmmo/internal/api"
 	"github.com/Sinketsu/artifactsmmo/internal/bank"
-	ycloggingslog "github.com/Sinketsu/yc-logging-slog"
-	ycsdk "github.com/yandex-cloud/go-sdk"
 )
 
 // Bank is not thread safe - so you need to explicit call Lock() and Unlock()
@@ -18,6 +16,7 @@ type Bank interface {
 	Lock()
 	Unlock()
 	Items() ([]bank.Item, error)
+	Gold() (int, error)
 }
 
 type Events interface {
@@ -26,11 +25,6 @@ type Events interface {
 
 type Params struct {
 	Name string
-}
-
-type LogOptions struct {
-	Group string
-	Token string
 }
 
 type Character struct {
@@ -53,22 +47,11 @@ type Character struct {
 	logger *slog.Logger
 }
 
-func NewCharacter(client *api.Client, params Params, bank Bank, events Events, logOptions LogOptions) (*Character, error) {
-	logOpts := ycloggingslog.Options{
-		LogGroupId:   logOptions.Group,
-		ResourceType: "character",
-		ResourceId:   params.Name,
-		Credentials:  ycsdk.OAuthToken(logOptions.Token),
-	}
-	logHandler, err := ycloggingslog.New(logOpts)
-	if err != nil {
-		return nil, fmt.Errorf("fail to init logger: %w", err)
-	}
-
+func NewCharacter(client *api.Client, params Params, bank Bank, events Events) (*Character, error) {
 	character := &Character{
 		name:   params.Name,
 		cli:    client,
-		logger: slog.New(logHandler),
+		logger: slog.Default().With(slog.String("service", "character"), slog.String("name", params.Name)),
 
 		bank:   bank,
 		events: events,

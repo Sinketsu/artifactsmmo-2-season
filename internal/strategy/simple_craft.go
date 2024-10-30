@@ -11,16 +11,19 @@ import (
 )
 
 type SimpleCraftStrategy struct {
-	craft       []string
-	recycle     []string
-	deposit     []string
-	depositGold bool
-	sell        []string
+	craft        []string
+	recycle      []string
+	deposit      []string
+	withdrawGold bool
+	sell         []string
+	buy          map[string]int
 }
 
 // NewTasksFightStrategy returns strategy that will just try spend all resources to craft one item
 func NewSimpleCraftStrategy() *SimpleCraftStrategy {
-	return &SimpleCraftStrategy{}
+	return &SimpleCraftStrategy{
+		buy: make(map[string]int),
+	}
 }
 
 // Craft sets an item to craft. Required
@@ -47,9 +50,15 @@ func (s *SimpleCraftStrategy) Deposit(items ...string) *SimpleCraftStrategy {
 	return s
 }
 
-// DepositGold sets allowment to deposit all gold from inventory
-func (s *SimpleCraftStrategy) DepositGold() *SimpleCraftStrategy {
-	s.depositGold = true
+// WithdrawGold sets allowment to withdraw all gold from bank
+func (s *SimpleCraftStrategy) WithdrawGold() *SimpleCraftStrategy {
+	s.withdrawGold = true
+	return s
+}
+
+// Sell sets items to sell in GE after craft
+func (s *SimpleCraftStrategy) Buy(items map[string]int) *SimpleCraftStrategy {
+	s.buy = items
 	return s
 }
 
@@ -70,9 +79,16 @@ func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
 		}
 	}
 
-	if s.depositGold {
-		if err := c.MacroDepositGold(c.Data().Gold); err != nil {
-			return fmt.Errorf("deposit gold: %w", err)
+	if s.withdrawGold {
+		gold, err := c.Bank().Gold()
+		if err != nil {
+			return fmt.Errorf("get bank gold: %w", err)
+		}
+
+		if gold > 0 {
+			if err := c.MacroWithdrawGold(gold); err != nil {
+				return fmt.Errorf("withdraw gold: %w", err)
+			}
 		}
 	}
 
@@ -98,8 +114,18 @@ func (s *SimpleCraftStrategy) Do(c *generic.Character) error {
 			continue
 		}
 
-		if s.canCraft(c, item.Craft.Value.CraftSchema.Items, bankItems) {
+		insufficient, canCraft := s.canCraft(c, item.Craft.Value.CraftSchema.Items, bankItems)
+		if canCraft {
 			return s.craftHelper(c, item)
+		}
+
+		ok, err := s.tryBuy(c, insufficient)
+		if err != nil {
+			return fmt.Errorf("try buy: %w", err)
+		}
+
+		if ok {
+			break
 		}
 	}
 
@@ -163,7 +189,7 @@ func (s *SimpleCraftStrategy) craftHelper(c *generic.Character, item oas.SingleI
 	return nil
 }
 
-func (s *SimpleCraftStrategy) canCraft(c *generic.Character, ingridients []oas.SimpleItemSchema, bank []bank.Item) bool {
+func (s *SimpleCraftStrategy) canCraft(c *generic.Character, ingridients []oas.SimpleItemSchema, bank []bank.Item) (insufficient []string, can bool) {
 	result := math.MaxInt
 	for _, req := range ingridients {
 		inBank := 0
@@ -178,7 +204,47 @@ func (s *SimpleCraftStrategy) canCraft(c *generic.Character, ingridients []oas.S
 		if q < result {
 			result = q
 		}
+
+		if q == 0 {
+			insufficient = append(insufficient, req.Code)
+		}
 	}
 
-	return result > 0
+	return insufficient, result > 0
+}
+
+func (s *SimpleCraftStrategy) tryBuy(c *generic.Character, insufficient []string) (bool, error) {
+	for _, ingridient := range insufficient {
+		if _, ok := s.buy[ingridient]; !ok {
+			return false, nil
+		}
+	}
+
+	for _, ingridient := range insufficient {
+		maxPrice := s.buy[ingridient]
+
+		item, err := c.GetGEItem(ingridient)
+		if err != nil {
+			return false, fmt.Errorf("get GE item: %w", err)
+		}
+
+		if item.Stock > 0 && item.BuyPrice.Value <= maxPrice {
+			count := min(item.MaxQuantity, c.Data().InventoryMaxItems-c.InventoryItemCount(), item.Stock)
+			if c.Data().Gold < count*item.BuyPrice.Value {
+				continue
+			}
+
+			err := c.MacroBuy(item.Code, count, item.BuyPrice.Value)
+			if err != nil {
+				return false, fmt.Errorf("buy: %w", err)
+			}
+
+			err = c.MacroDeposit(item.Code, c.InInventory(item.Code))
+			if err != nil {
+				return false, fmt.Errorf("deposit: %w", err)
+			}
+		}
+	}
+
+	return true, nil
 }

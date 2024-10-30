@@ -16,8 +16,8 @@ type Character struct {
 	strategy strategy.Strategy
 }
 
-func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events, logGroup string, logToken string) *Character {
-	gc, err := generic.NewCharacter(client, generic.Params{Name: "Ereshkigal"}, bank, events, generic.LogOptions{Group: logGroup, Token: logToken})
+func NewCharacter(client *api.Client, bank generic.Bank, events generic.Events) *Character {
+	gc, err := generic.NewCharacter(client, generic.Params{Name: "Ereshkigal"}, bank, events)
 	if err != nil {
 		panic(err)
 	}
@@ -46,23 +46,25 @@ func (c *Character) do() error {
 	c.setStrategy(
 		"do monster tasks",
 		strategy.NewTasksFightStrategy().
-			Deposit("owlbear_hair", "golden_egg", "red_cloth", "skeleton_bone", "skeleton_skull",
-				"vampire_blood", "flying_wing", "serpent_skin", "ogre_eye", "ogre_skin",
-				"bandit_armor", "demon_horn", "piece_of_obsidian", "magic_stone", "cursed_book",
-				"demoniac_dust", "piece_of_obsidian").
+			Deposit("owlbear_hair", "red_cloth", "skeleton_bone",
+				"vampire_blood", "ogre_eye", "ogre_skin",
+				"demon_horn", "piece_of_obsidian", "magic_stone", "cursed_book",
+				"demoniac_dust", "piece_of_obsidian", "lizard_skin").
 			DepositGold().
 			Sell("mushroom", "red_slimeball", "yellow_slimeball", "blue_slimeball", "green_slimeball",
 				"raw_beef", "milk_bucket", "cowhide", "raw_wolf_meat", "wolf_bone", "wolf_hair",
-				"raw_chicken", "egg", "feather", "pig_skin", "lizard_skin").
-			CancelTasks("lich", "bat").
-			AllowEvents("Bandit Camp", "Portal"),
+				"raw_chicken", "egg", "feather", "pig_skin", "flying_wing", "skeleton_skull",
+				"serpent_skin", "bandit_armor", "golden_egg").
+			CancelTasks("lich", "bat", "cultist_acolyte"),
+		// AllowEvents("Bandit Camp", "Portal"),
 	)
 
 	// c.setStrategy(
-	// 	"fight death knight for resources",
+	// 	"fight skeleton for resources",
 	// 	strategy.NewSimpleFightStrategy().
-	// 		Fight("death_knight").
-	// 		Bank("red_cloth", "death_knight_sword", "tasks_coin"),
+	// 		Fight("skeleton").
+	// 		DepositGold().
+	// 		Deposit("red_cloth", "death_knight_sword", "tasks_coin", "skeleton_bone", "skeleton_skull"),
 	// )
 
 	// c.setStrategy("player control", strategy.EmptyStrategy())

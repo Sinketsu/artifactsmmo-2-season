@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -11,7 +11,8 @@ import (
 )
 
 type Service struct {
-	cli *api.Client
+	cli    *api.Client
+	logger *slog.Logger
 
 	events []oas.ActiveEventSchema
 	mu     sync.Mutex
@@ -19,21 +20,45 @@ type Service struct {
 
 func New(client *api.Client) *Service {
 	return &Service{
-		cli: client,
+		cli:    client,
+		logger: slog.Default().With("service", "events"),
 	}
 }
 
-func (s *Service) Update(interval time.Duration) {
-	for range time.Tick(interval) {
-		result, err := s.cli.GetAllEventsEventsGet(context.TODO(), oas.GetAllEventsEventsGetParams{})
-		if err != nil {
-			fmt.Println("fail update event list:", err)
-		}
-
-		s.mu.Lock()
-		s.events = result.Data
-		s.mu.Unlock()
+func (s *Service) Update(ctx context.Context, interval time.Duration) {
+	if err := s.update(); err != nil {
+		s.logger.With(slog.Any("error", err)).Error("fail update event list")
+		errorRate.Inc()
 	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := s.update(); err != nil {
+				s.logger.With(slog.Any("error", err)).Error("fail update event list")
+				errorRate.Inc()
+			}
+		}
+	}
+}
+
+func (s *Service) update() error {
+	result, err := s.cli.GetAllEventsEventsGet(context.TODO(), oas.GetAllEventsEventsGetParams{})
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	s.events = result.Data
+	s.mu.Unlock()
+
+	eventCount.Set(int64(len(s.events)))
+	return nil
 }
 
 func (s *Service) Get(name string) *oas.ActiveEventSchema {

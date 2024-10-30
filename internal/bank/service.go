@@ -58,6 +58,15 @@ func (s *Service) Items() ([]Item, error) {
 	return result, nil
 }
 
+func (s *Service) Gold() (int, error) {
+	resp, err := s.cli.GetBankDetailsMyBankGet(context.Background())
+	if err != nil {
+		return 0, err
+	}
+
+	return resp.Data.Gold, nil
+}
+
 func (s *Service) getItem(code string) (oas.SingleItemSchemaItem, error) {
 	if item, ok := s.itemCache[code]; ok {
 		return item, nil
