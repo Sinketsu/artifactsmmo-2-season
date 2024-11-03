@@ -9,6 +9,7 @@ import (
 	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 	"github.com/Sinketsu/artifactsmmo/internal/api"
 	"github.com/Sinketsu/artifactsmmo/internal/bank"
+	ycloggingslog "github.com/Sinketsu/yc-logging-slog"
 )
 
 // Bank is not thread safe - so you need to explicit call Lock() and Unlock()
@@ -51,7 +52,7 @@ func NewCharacter(client *api.Client, params Params, bank Bank, events Events) (
 	character := &Character{
 		name:   params.Name,
 		cli:    client,
-		logger: slog.Default().With(slog.String("service", "character"), slog.String("name", params.Name)),
+		logger: slog.Default().With(ycloggingslog.Stream, params.Name),
 
 		bank:   bank,
 		events: events,

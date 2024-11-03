@@ -49,7 +49,11 @@ func main() {
 
 	bank := bank.New(apiClient)
 	events := events.New(apiClient)
-	monitoringClient := ycmonitoringgo.NewClient(os.Getenv("MONITORING_FOLDER"), os.Getenv("MONITORING_TOKEN"), ycmonitoringgo.WithLogger(slog.Default()))
+	monitoringClient := ycmonitoringgo.NewClient(
+		os.Getenv("MONITORING_FOLDER"),
+		os.Getenv("MONITORING_TOKEN"),
+		ycmonitoringgo.WithLogger(slog.Default().With(ycloggingslog.Stream, "monitoring")),
+	)
 
 	characters := []Character{
 		ishtar.NewCharacter(apiClient, bank, events),

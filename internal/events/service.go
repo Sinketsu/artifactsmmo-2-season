@@ -8,6 +8,7 @@ import (
 
 	oas "github.com/Sinketsu/artifactsmmo/gen/oas"
 	"github.com/Sinketsu/artifactsmmo/internal/api"
+	ycloggingslog "github.com/Sinketsu/yc-logging-slog"
 )
 
 type Service struct {
@@ -21,7 +22,7 @@ type Service struct {
 func New(client *api.Client) *Service {
 	return &Service{
 		cli:    client,
-		logger: slog.Default().With("service", "events"),
+		logger: slog.Default().With(ycloggingslog.Stream, "events"),
 	}
 }
 

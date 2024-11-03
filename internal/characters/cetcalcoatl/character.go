@@ -43,27 +43,15 @@ func (c *Character) Live(ctx context.Context) {
 }
 
 func (c *Character) do() error {
-	// c.setStrategy(
-	// 	"gather iron_rocks",
-	// 	strategy.NewSimpleGatherStrategy().
-	// 		AllowEvents("Strange Apparition", "Magic Apparition").
-	// 		Gather("iron_rocks").
-	// 		Craft("iron").
-	// 		DepositGold().
-	// 		Deposit("iron", "topaz", "emerald", "ruby", "sapphire", "strange_ore", "diamond", "magic_wood", "magic_sap"),
-	// )
 	c.setStrategy(
-		"fight skeleton",
-		strategy.NewSimpleFightStrategy().
-			Fight("skeleton").
-			Deposit("skeleton_bone").
-			Sell("skeleton_skull").
-			DepositGold(),
+		"gather dead tree",
+		strategy.NewSimpleGatherStrategy().
+			AllowEvents("Strange Apparition", "Magic Apparition").
+			Gather("dead_tree").
+			Craft("dead_wood_plank").
+			DepositGold().
+			Deposit("dead_wood_plank", "sap", "strange_ore", "diamond", "magic_wood", "magic_sap"),
 	)
-
-	// c.setStrategy("craft steel", strategy.NewSimpleCraftStrategy().Craft("steel").Bank("steel"))
-
-	// c.setStrategy("player control", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
 }

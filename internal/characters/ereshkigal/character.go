@@ -49,25 +49,15 @@ func (c *Character) do() error {
 			Deposit("owlbear_hair", "red_cloth", "skeleton_bone",
 				"vampire_blood", "ogre_eye", "ogre_skin",
 				"demon_horn", "piece_of_obsidian", "magic_stone", "cursed_book",
-				"demoniac_dust", "piece_of_obsidian", "lizard_skin").
+				"demoniac_dust", "piece_of_obsidian", "lizard_skin", "tasks_coin").
 			DepositGold().
 			Sell("mushroom", "red_slimeball", "yellow_slimeball", "blue_slimeball", "green_slimeball",
 				"raw_beef", "milk_bucket", "cowhide", "raw_wolf_meat", "wolf_bone", "wolf_hair",
 				"raw_chicken", "egg", "feather", "pig_skin", "flying_wing", "skeleton_skull",
 				"serpent_skin", "bandit_armor", "golden_egg").
-			CancelTasks("lich", "bat", "cultist_acolyte"),
-		// AllowEvents("Bandit Camp", "Portal"),
+			CancelTasks("lich", "bat", "cultist_acolyte").
+			AllowEvents("Bandit Camp", "Portal"),
 	)
-
-	// c.setStrategy(
-	// 	"fight skeleton for resources",
-	// 	strategy.NewSimpleFightStrategy().
-	// 		Fight("skeleton").
-	// 		DepositGold().
-	// 		Deposit("red_cloth", "death_knight_sword", "tasks_coin", "skeleton_bone", "skeleton_skull"),
-	// )
-
-	// c.setStrategy("player control", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
 }

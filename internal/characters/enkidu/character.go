@@ -46,39 +46,27 @@ func (c *Character) Live(ctx context.Context) {
 func (c *Character) do() error {
 	items := []string{}
 
-	// if c.Data().GearcraftingLevel >= 20 && c.Data().GearcraftingLevel <= 30 {
-	// 	items = append(items, "magic_wizard_hat", "steel_helm", "steel_boots", "steel_armor", "steel_legs_armor",
-	// 		"skeleton_pants", "skeleton_armor", "skeleton_helmet", "serpent_skin_legs_armor", "steel_shield",
-	// 		"tromatising_mask", "serpent_skin_armor")
-	// }
-
-	// if c.Data().GearcraftingLevel >= 25 && c.Data().GearcraftingLevel <= 30 {
-	// 	items = append(items, "lizard_skin_armor", "lizard_skin_legs_armor", "piggy_pants")
-	// }
-
-	if c.Data().JewelrycraftingLevel >= 20 && c.Data().JewelrycraftingLevel <= 30 {
-		items = append(items, "ring_of_chance", "dreadful_ring", "steel_ring", "skull_ring", "dreadful_amulet",
-			"skull_amulet")
-	}
+	items = append(items, "gold_platelegs", "gold_mask", "gold_helm")
+	items = append(items, "gold_ring")
 
 	c.setStrategy(
 		"craft something of: "+strings.Join(items, ", "),
 		strategy.NewSimpleCraftStrategy().
 			WithdrawGold().
 			Buy(map[string]int{
-				"iron":           500,
-				"wolf_bone":      600,
-				"skeleton_bone":  500,
-				"serpent_skin":   500,
-				"cowhide":        500,
-				"hardwood_plank": 500,
-				"flying_wing":    500,
+				"lizard_skin":    2000,
+				"red_cloth":      2000,
+				"vampire_blood":  2000,
+				"ogre_skin":      1000,
+				"demon_horn":     3000,
+				"skeleton_skull": 1000,
+				"owlbear_hair":   3000,
+				"wolf_bone":      2000,
+				"skeleton_bone":  2000,
 			}).
 			Craft(items...).
 			Recycle(items...),
 	)
-
-	// c.setStrategy("player control", strategy.EmptyStrategy())
 
 	return c.strategy.Do(&c.Character)
 }

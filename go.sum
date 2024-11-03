@@ -1,5 +1,7 @@
 github.com/Sinketsu/yc-logging-slog v0.0.4-dev h1:glAz7UHAvfIBbc5QjiIawHHUPaYL+XizeFJRirPaHdk=
 github.com/Sinketsu/yc-logging-slog v0.0.4-dev/go.mod h1:JZev7VVaUswlgbPy8NwI37rK9gvvkS9ZYZFCKHTL+9g=
+github.com/Sinketsu/yc-logging-slog v0.0.5-dev h1:OY2+60RQRoXBVS3sLD1bOcUBWJfdJDVd3edrVXFJ/CI=
+github.com/Sinketsu/yc-logging-slog v0.0.5-dev/go.mod h1:JZev7VVaUswlgbPy8NwI37rK9gvvkS9ZYZFCKHTL+9g=
 github.com/Sinketsu/yc-monitoring-go v0.0.2-dev h1:4BspUL1DK4JnXpvlNwFX4Wxeup0SbV9pK1bURxloJtM=
 github.com/Sinketsu/yc-monitoring-go v0.0.2-dev/go.mod h1:+axwPhdWbLulYwojwcCE1XwERhvIe4qKAqK3adOg+eQ=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
@@ -47,6 +49,8 @@ github.com/mxschmitt/golang-combinations v1.2.0 h1:V5E7MncIK8Yr1SL/SpdqMuSquFsfo
 github.com/mxschmitt/golang-combinations v1.2.0/go.mod h1:RCm5eR03B+JrBOMRDLsKZWShluXdrHu+qwhPEJ0miBM=
 github.com/ogen-go/ogen v1.5.0 h1:BhwhiEGNum18dLzhkKl0+aqy/0C1gRhqy0dPkI7NAvk=
 github.com/ogen-go/ogen v1.5.0/go.mod h1:fZ5xl1T3NJOCvHfqszizSYSz+iuI1jW1wVoRENSKR8A=
+github.com/ogen-go/ogen v1.6.0 h1:5pwTvLdJHVz7MhTHvrcoaQePROXyJnuY5ECcC+GZDrA=
+github.com/ogen-go/ogen v1.6.0/go.mod h1:Y+ZYfR1bKmEQBSdxblRtMRsf8Fk/ExskKc4dZNW+hZ0=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
@@ -59,8 +63,12 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/yandex-cloud/go-genproto v0.0.0-20241021132621-28bb61d00c2f h1:u7ETK40lM4ygnDzYtGFLk36fWARftvU+I0zwTYrOVwE=
 github.com/yandex-cloud/go-genproto v0.0.0-20241021132621-28bb61d00c2f/go.mod h1:0LDD/IZLIUIV4iPH+YcF+jysO3jkSvADFGm4dCAuwQo=
+github.com/yandex-cloud/go-genproto v0.0.0-20241101135610-76a0cfc1a773 h1:xkWrnYFWxiwCKVbmuOEMR030UCFklpglmOcPv9yJz2c=
+github.com/yandex-cloud/go-genproto v0.0.0-20241101135610-76a0cfc1a773/go.mod h1:0LDD/IZLIUIV4iPH+YcF+jysO3jkSvADFGm4dCAuwQo=
 github.com/yandex-cloud/go-sdk v0.0.0-20241021153520-213d4c625eca h1:m3Hne9w8jnfiPPDw9KqSLtRa7Et+gzCIub2ky5uUGGM=
 github.com/yandex-cloud/go-sdk v0.0.0-20241021153520-213d4c625eca/go.mod h1:id1/mPjMDlqamdsay74AJLVVLGCRTnjMIKuXpNzVN08=
+github.com/yandex-cloud/go-sdk v0.0.0-20241101143304-947cf519f6bd h1:LcA5pQoWjS2hhG6bV2ZL9eBEV2wLSVbM2KcpDphYP/w=
+github.com/yandex-cloud/go-sdk v0.0.0-20241101143304-947cf519f6bd/go.mod h1:oku4OkbdLLOOpZEz2XxYGXI7rFhxBI5W0cLPmpStdqA=
 go.opentelemetry.io/otel v1.31.0 h1:NsJcKPIW0D0H3NgzPDHmo0WW6SptzPdqg/L1zsIm2hY=
 go.opentelemetry.io/otel v1.31.0/go.mod h1:O0C14Yl9FgkjqcCZAsE053C13OaddMYr/hz6clDkEJE=
 go.opentelemetry.io/otel/metric v1.31.0 h1:FSErL0ATQAmYHUIzSezZibnyVlft1ybhy4ozRPcF2fE=
