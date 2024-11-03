@@ -221,3 +221,4 @@ I didn't have much time this season, so I didn't have time to implement everythi
 - More observability (metrics and logs)
 - *May be* some telegram bot to help me view the progress or control characters
 - *May be* create an additional character for a full time trading) In the next season GE will be completely reworked, so it is possible to create some trader character. It will be so interesting to automate some trading strategies)
+- Prioritize achievments
